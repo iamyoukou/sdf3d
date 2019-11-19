@@ -11,11 +11,18 @@ LIBS=-L/usr/local/Cellar/glew/2.1.0/lib -lglfw \
 -L/usr/local/Cellar/anttweakbar/1.16/lib -lAntTweakBar \
 -framework GLUT -framework OpenGL -framework Cocoa
 
-all: main
+all: main test
 
 main: main.o common.o
 	g++ $(LIBS) main.o common.o -o main
 	rm -f *.o
+
+test: test.o common.o
+	g++ $(LIBS) test.o common.o -o test
+	rm -f *.o
+
+test.o: ./src/test.cpp
+	g++ -c $(INCS) ./src/test.cpp -o test.o
 
 main.o: ./src/main.cpp
 	g++ -c $(INCS) ./src/main.cpp -o main.o
