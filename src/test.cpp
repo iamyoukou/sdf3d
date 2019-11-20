@@ -64,7 +64,8 @@ vec3 baryCoord(vec3 a, vec3 b, vec3 c, vec3 p) {
 }
 
 int main(int argc, char const *argv[]) {
-  vec3 A(1, 2, 0), B(5, 3, 0), C(2, 4, 0), P(2.06, 1.74, 0);
+  vec3 A(1, 2, 0), B(5, 3, 0), C(2, 4, 0), P(1, 2.5, 0);
+  float dist = 9999.f;
 
   // barycentric coordinate of P
   vec3 Pbary = baryCoord(A, B, C, P);
@@ -97,19 +98,39 @@ int main(int argc, char const *argv[]) {
     // first: vertex regions
     if (uvAb[1] <= 0 && uvCa[0] <= 0) {
       std::cout << "region A" << '\n';
+      dist = length(P - A);
     } else if (uvAb[0] <= 0 && uvBc[1] <= 0) {
       std::cout << "region B" << '\n';
+      dist = length(P - B);
     } else if (uvBc[0] <= 0 && uvCa[1] <= 0) {
       std::cout << "region C" << '\n';
+      dist = length(P - C);
     }
     // Second: edge regions
     else if (uvAb[0] > 0 && uvAb[1] > 0 && uvwAbc[2] <= 0) {
       std::cout << "region AB" << '\n';
+      vec3 dirAb = normalize(B - A);
+      vec3 AP = P - A;
+      float frac = dot(AP, dirAb);
+      vec3 Pinter = A + dirAb * frac;
+      dist = length(P - Pinter);
     } else if (uvBc[0] > 0 && uvBc[1] > 0 && uvwAbc[0] <= 0) {
       std::cout << "region BC" << '\n';
+      vec3 dirBc = normalize(C - B);
+      vec3 BP = P - B;
+      float frac = dot(BP, dirBc);
+      vec3 Pinter = B + dirBc * frac;
+      dist = length(P - Pinter);
     } else if (uvCa[0] > 0 && uvCa[1] > 0 && uvwAbc[1] <= 0) {
       std::cout << "region CA" << '\n';
+      vec3 dirCa = normalize(A - C);
+      vec3 CP = P - C;
+      float frac = dot(CP, dirCa);
+      vec3 Pinter = C + dirCa * frac;
+      dist = length(P - Pinter);
     }
+
+    std::cout << "dist = " << dist << '\n';
   }
 
   // std::cout << glm::to_string(cross(B - A, C - A)) << '\n';
