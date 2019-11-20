@@ -64,10 +64,10 @@ vec3 baryCoord(vec3 a, vec3 b, vec3 c, vec3 p) {
 }
 
 int main(int argc, char const *argv[]) {
-  vec3 A(1, 2, 0), B(5, 3, 0), C(2, 4, 0), P(3, 3, 0);
+  vec3 A(1, 2, 0), B(5, 3, 0), C(2, 4, 0), P(2.06, 1.74, 0);
 
   // barycentric coordinate of P
-  vec3 Pbary = baryCoord(A, B, C, vec3(1.6, 2.4, 0));
+  vec3 Pbary = baryCoord(A, B, C, P);
   // std::cout << glm::to_string(Pbary) << '\n';
 
   // P is inside ABC
@@ -78,7 +78,38 @@ int main(int argc, char const *argv[]) {
   // When P is outside ABC,
   // find the closest edge or vertex
   else {
-    std::cout << "P is outside triangle" << '\n';
+    // std::cout << "P is outside triangle" << '\n';
+
+    // Calculate 6 line uv parameters
+    vec2 uvAb, uvBc, uvCa;
+    uvAb = lineUv(A, B, P);
+    uvBc = lineUv(B, C, P);
+    uvCa = lineUv(C, A, P);
+
+    // Calculate 3 barycentric  parameters
+    vec3 uvwAbc = baryCoord(A, B, C, P);
+
+    // std::cout << "uvAb = " << glm::to_string(uvAb) << '\n';
+    // std::cout << "uvBc = " << glm::to_string(uvBc) << '\n';
+    // std::cout << "uvCa = " << glm::to_string(uvCa) << '\n';
+    // std::cout << "uvwAbc = " << glm::to_string(uvwAbc) << '\n';
+
+    // first: vertex regions
+    if (uvAb[1] <= 0 && uvCa[0] <= 0) {
+      std::cout << "region A" << '\n';
+    } else if (uvAb[0] <= 0 && uvBc[1] <= 0) {
+      std::cout << "region B" << '\n';
+    } else if (uvBc[0] <= 0 && uvCa[1] <= 0) {
+      std::cout << "region C" << '\n';
+    }
+    // Second: edge regions
+    else if (uvAb[0] > 0 && uvAb[1] > 0 && uvwAbc[2] <= 0) {
+      std::cout << "region AB" << '\n';
+    } else if (uvBc[0] > 0 && uvBc[1] > 0 && uvwAbc[0] <= 0) {
+      std::cout << "region BC" << '\n';
+    } else if (uvCa[0] > 0 && uvCa[1] > 0 && uvwAbc[1] <= 0) {
+      std::cout << "region CA" << '\n';
+    }
   }
 
   // std::cout << glm::to_string(cross(B - A, C - A)) << '\n';
