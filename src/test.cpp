@@ -63,32 +63,65 @@ vec3 baryCoord(vec3 a, vec3 b, vec3 c, vec3 p) {
   return vec3(u, v, w);
 }
 
-int main(int argc, char const *argv[]) {
-  vec3 A(1, 2, 0), B(5, 3, 0), C(2, 4, 0), P(1, 2.5, 0);
+// Projecting a point to a plane
+// Point is defined by P
+// Plane is define by A, B, C
+// Return the projected point P'
+vec3 point2plane(vec3 a, vec3 b, vec3 c, vec3 p) {
+  vec3 ab, ac, ap;
+  ab = b - a;
+  ac = c - a;
+  ap = p - a;
+
+  // surface normal
+  vec3 n = normalize(cross(ab, ac));
+
+  // PP'
+  vec3 ppProj = -dot(ap, n) * n;
+
+  // AP'
+  vec3 apProj = ap + ppProj;
+
+  // P'
+  vec3 pProj = apProj + a;
+
+  return pProj;
+}
+
+// Distance between a point and a triangle
+// Triangle is defined by A, B, C in counter-clockwise
+// (and maybe a surface normal N if provided)
+// Point: P
+float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
   float dist = 9999.f;
 
-  // barycentric coordinate of P
-  vec3 Pbary = baryCoord(A, B, C, P);
+  // Project P onto a plane at P'
+  vec3 Pproj = point2plane(a, b, c, p);
+  // std::cout << "P' = " << glm::to_string(Pproj) << '\n';
+  // std::cout << dot(n, P1 - a) << '\n';
+
+  // barycentric coordinate of P'
+  vec3 Pbary = baryCoord(a, b, c, Pproj);
   // std::cout << glm::to_string(Pbary) << '\n';
 
-  // P is inside ABC
+  // P' is inside ABC
   if ((Pbary.x > 0 && Pbary.x < 1.f) && (Pbary.y > 0 && Pbary.y < 1.f) &&
       (Pbary.z > 0 && Pbary.z < 1.f)) {
-    std::cout << "P is inside triangle" << '\n';
+    std::cout << "P' is inside triangle" << '\n';
   }
-  // When P is outside ABC,
+  // When P' is outside ABC,
   // find the closest edge or vertex
   else {
-    // std::cout << "P is outside triangle" << '\n';
+    // std::cout << "P' is outside triangle" << '\n';
 
     // Calculate 6 line uv parameters
     vec2 uvAb, uvBc, uvCa;
-    uvAb = lineUv(A, B, P);
-    uvBc = lineUv(B, C, P);
-    uvCa = lineUv(C, A, P);
+    uvAb = lineUv(a, b, Pproj);
+    uvBc = lineUv(b, c, Pproj);
+    uvCa = lineUv(c, a, Pproj);
 
     // Calculate 3 barycentric  parameters
-    vec3 uvwAbc = baryCoord(A, B, C, P);
+    vec3 uvwAbc = baryCoord(a, b, c, Pproj);
 
     // std::cout << "uvAb = " << glm::to_string(uvAb) << '\n';
     // std::cout << "uvBc = " << glm::to_string(uvBc) << '\n';
@@ -98,45 +131,58 @@ int main(int argc, char const *argv[]) {
     // first: vertex regions
     if (uvAb[1] <= 0 && uvCa[0] <= 0) {
       std::cout << "region A" << '\n';
-      dist = length(P - A);
+      dist = length(p - a);
     } else if (uvAb[0] <= 0 && uvBc[1] <= 0) {
       std::cout << "region B" << '\n';
-      dist = length(P - B);
+      dist = length(p - b);
     } else if (uvBc[0] <= 0 && uvCa[1] <= 0) {
       std::cout << "region C" << '\n';
-      dist = length(P - C);
+      dist = length(p - c);
     }
     // Second: edge regions
     else if (uvAb[0] > 0 && uvAb[1] > 0 && uvwAbc[2] <= 0) {
       std::cout << "region AB" << '\n';
-      vec3 dirAb = normalize(B - A);
-      vec3 AP = P - A;
-      float frac = dot(AP, dirAb);
-      vec3 Pinter = A + dirAb * frac;
-      dist = length(P - Pinter);
+      vec3 dirAb = normalize(b - a);
+      vec3 APproj = Pproj - a;
+      float frac = dot(APproj, dirAb);
+      vec3 Pinter = a + dirAb * frac;
+      dist = length(p - Pinter);
     } else if (uvBc[0] > 0 && uvBc[1] > 0 && uvwAbc[0] <= 0) {
       std::cout << "region BC" << '\n';
-      vec3 dirBc = normalize(C - B);
-      vec3 BP = P - B;
-      float frac = dot(BP, dirBc);
-      vec3 Pinter = B + dirBc * frac;
-      dist = length(P - Pinter);
+      vec3 dirBc = normalize(c - b);
+      vec3 BPproj = Pproj - b;
+      float frac = dot(BPproj, dirBc);
+      vec3 Pinter = b + dirBc * frac;
+      dist = length(p - Pinter);
     } else if (uvCa[0] > 0 && uvCa[1] > 0 && uvwAbc[1] <= 0) {
       std::cout << "region CA" << '\n';
-      vec3 dirCa = normalize(A - C);
-      vec3 CP = P - C;
-      float frac = dot(CP, dirCa);
-      vec3 Pinter = C + dirCa * frac;
-      dist = length(P - Pinter);
+      vec3 dirCa = normalize(a - c);
+      vec3 CPproj = Pproj - c;
+      float frac = dot(CPproj, dirCa);
+      vec3 Pinter = c + dirCa * frac;
+      dist = length(p - Pinter);
     }
 
-    std::cout << "dist = " << dist << '\n';
-  }
+    // std::cout << "dist = " << dist << '\n';
+  } // end if P' is inside ABC
 
-  // std::cout << glm::to_string(cross(B - A, C - A)) << '\n';
-  // std::cout << glm::to_string(cross(B - A, P - A)) << '\n';
-  // std::cout << glm::to_string(cross(C - B, P - B)) << '\n';
-  // std::cout << glm::to_string(cross(A - C, P - C)) << '\n';
+  return dist;
+}
+
+int main(int argc, char const *argv[]) {
+
+  // vec3 A(1, -0.86, -0.5), B(1, 0.86, 0.5), C(-1, -0.86, -0.5), P(1, 2.5, 10);
+  float dist = 9999.f;
+
+  // test
+  // vec3 P1(0, -1.615, 1.327);
+
+  // std::cout << "n = " << glm::to_string(n) << '\n';
+
+  std::cout << "dist = "
+            << distPoint2Triangle(vec3(1, 2, 0), vec3(5, 3, 0), vec3(2, 4, 0),
+                                  vec3(1, 2.5, 10))
+            << '\n';
 
   return 0;
 }
