@@ -108,6 +108,8 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
   if ((Pbary.x > 0 && Pbary.x < 1.f) && (Pbary.y > 0 && Pbary.y < 1.f) &&
       (Pbary.z > 0 && Pbary.z < 1.f)) {
     std::cout << "P' is inside triangle" << '\n';
+    vec3 n = normalize(cross(b - a, c - a));
+    dist = dot(n, p - a);
   }
   // When P' is outside ABC,
   // find the closest edge or vertex
@@ -171,18 +173,18 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
 
 int main(int argc, char const *argv[]) {
 
-  // vec3 A(1, -0.86, -0.5), B(1, 0.86, 0.5), C(-1, -0.86, -0.5), P(1, 2.5, 10);
-  float dist = 9999.f;
+  vec3 A(1, -0.86, -0.5), B(1, 0.86, 0.5), C(-1, -0.86, -0.5);
+  vec3 P1(0, -1.615, 1.327);
 
-  // test
-  // vec3 P1(0, -1.615, 1.327);
+  float dist = distPoint2Triangle(A, B, C, P1);
+  std::cout << "P1 dist = " << dist << '\n';
+  std::cout << "answer = " << dot(vec3(0, -0.502, 0.864), P1 - A) << '\n';
 
-  // std::cout << "n = " << glm::to_string(n) << '\n';
-
-  std::cout << "dist = "
-            << distPoint2Triangle(vec3(1, 2, 0), vec3(5, 3, 0), vec3(2, 4, 0),
-                                  vec3(1, 2.5, 10))
-            << '\n';
+  // std::cout << "dist = "
+  //           << distPoint2Triangle(vec3(1, 2, 0), vec3(5, 3, 0), vec3(2, 4,
+  //           0),
+  //                                 vec3(1, 2.5, 10))
+  //           << '\n';
 
   return 0;
 }
