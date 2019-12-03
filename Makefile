@@ -17,8 +17,8 @@ main: main.o common.o
 	g++ $(LIBS) main.o common.o -o main
 	rm -f *.o
 
-test: test.o common.o
-	g++ $(LIBS) test.o common.o -o test
+test: test.o common.o sdf.o
+	g++ $(LIBS) $^ -o test
 	rm -f *.o
 
 test.o: ./src/test.cpp
@@ -29,6 +29,9 @@ main.o: ./src/main.cpp
 
 common.o: ./src/common.cpp
 	g++ -c $(INCS) ./src/common.cpp -o common.o
+
+sdf.o: ./src/sdf.cpp
+	g++ -c $(INCS) ./src/sdf.cpp -o sdf.o
 
 .PHONY: clean
 
