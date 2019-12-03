@@ -85,6 +85,8 @@ vec3 point2plane(vec3 a, vec3 b, vec3 c, vec3 p) {
   // P'
   vec3 pProj = apProj + a;
 
+  // std::cout << "projected point: " << glm::to_string(pProj) << '\n';
+
   return pProj;
 }
 
@@ -97,7 +99,7 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
 
   // Project P onto a plane at P'
   vec3 Pproj = point2plane(a, b, c, p);
-  // std::cout << "P' = " << glm::to_string(Pproj) << '\n';
+  // std::cout << "P projected = " << glm::to_string(Pproj) << '\n';
   // std::cout << dot(n, P1 - a) << '\n';
 
   // barycentric coordinate of P'
@@ -148,6 +150,7 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
       vec3 APproj = Pproj - a;
       float frac = dot(APproj, dirAb);
       vec3 Pinter = a + dirAb * frac;
+      // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = length(p - Pinter);
     } else if (uvBc[0] > 0 && uvBc[1] > 0 && uvwAbc[0] <= 0) {
       std::cout << "region BC" << '\n';
@@ -155,6 +158,7 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
       vec3 BPproj = Pproj - b;
       float frac = dot(BPproj, dirBc);
       vec3 Pinter = b + dirBc * frac;
+      // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = length(p - Pinter);
     } else if (uvCa[0] > 0 && uvCa[1] > 0 && uvwAbc[1] <= 0) {
       std::cout << "region CA" << '\n';
@@ -162,6 +166,7 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
       vec3 CPproj = Pproj - c;
       float frac = dot(CPproj, dirCa);
       vec3 Pinter = c + dirCa * frac;
+      // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = length(p - Pinter);
     }
 
@@ -173,12 +178,20 @@ float distPoint2Triangle(vec3 a, vec3 b, vec3 c, vec3 p) {
 
 int main(int argc, char const *argv[]) {
 
-  vec3 A(1, -0.86, -0.5), B(1, 0.86, 0.5), C(-1, -0.86, -0.5);
+  vec3 A(1, -0.86, -0.5), B(-1, 0.86, 0.5), C(-1, -0.86, -0.5);
   vec3 P1(0, -1.615, 1.327);
+  vec3 P2(0.481, 0.344, 0.717);
+  vec3 P3(-1.372, 1.374, 0.84);
 
-  float dist = distPoint2Triangle(A, B, C, P1);
-  std::cout << "P1 dist = " << dist << '\n';
-  std::cout << "answer = " << dot(vec3(0, -0.502, 0.864), P1 - A) << '\n';
+  // float dist = distPoint2Triangle(A, B, C, P1);
+  // std::cout << "P1 dist = " << dist << '\n';
+  // std::cout << "answer = " << dot(vec3(0, -0.502, 0.864), P1 - A) << '\n';
+
+  // float dist = distPoint2Triangle(A, B, C, P2);
+  // std::cout << "P2 dist = " << dist << '\n';
+
+  float dist = distPoint2Triangle(A, B, C, P3);
+  std::cout << "P3 dist = " << dist << '\n';
 
   // std::cout << "dist = "
   //           << distPoint2Triangle(vec3(1, 2, 0), vec3(5, 3, 0), vec3(2, 4,
