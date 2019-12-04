@@ -1,37 +1,28 @@
 #include "common.h"
 
-string read_file(const string filename) {
-  ifstream in;
+std::string readFile(const std::string filename) {
+  std::ifstream in;
   in.open(filename.c_str());
-  stringstream ss;
+  std::stringstream ss;
   ss << in.rdbuf();
-  string sOut = ss.str();
+  std::string sOut = ss.str();
   in.close();
 
   return sOut;
 }
 
-mesh_info_t load_obj(string filename) {
-  /*
-      Read vertex information from filename,
-      and temporarily store in the following variables.
-  */
-  vector<vec3> tempV;                         // store v
-  vector<vec3> tempVn;                        // store vn
-  vector<ivec4> tempFaceContainedVertexIndex; // store v of "v//vn" in f
-  vector<int> tempFaceNormalIndex;            // store vn of "v//vn" in f
-  int vertexNumber = 0, faceNormalNumber = 0, faceNumber = 0;
+Mesh loadObj(std::string filename) {
+  Mesh outMesh;
 
-  ifstream fin;
+  std::ifstream fin;
   fin.open(filename.c_str());
 
   if (!(fin.good())) {
-    cerr << "failed to open file : " << filename << endl;
+    std::cout << "failed to open file : " << filename << std::endl;
   }
 
-  int temp_vNum = 0;          // number of vertices
   while (fin.peek() != EOF) { // read obj loop
-    string s;
+    std::string s;
     fin >> s;
 
     // vertex coordinate
@@ -40,8 +31,7 @@ mesh_info_t load_obj(string filename) {
       fin >> x;
       fin >> y;
       fin >> z;
-      tempV.push_back(vec3(x, y, z));
-      vertexNumber++;
+      outMesh.vertices.push_back(glm::vec3(x, y, z));
     }
     // face normal (recorded as vn in obj file)
     else if ("vn" == s) {
@@ -49,115 +39,45 @@ mesh_info_t load_obj(string filename) {
       fin >> x;
       fin >> y;
       fin >> z;
-      tempVn.push_back(vec3(x, y, z));
-      faceNormalNumber++;
+      outMesh.faceNormals.push_back(glm::vec3(x, y, z));
     }
     // vertices contained in face, and face normal
     else if ("f" == s) {
-      ivec4 v4i; // for v in "v//vn"
-      int v1i;   // for vn in "v//vn"
+      //(v1, v2, v3, n) indices
+      glm::ivec4 tempFace; // for v in "v//vn"
 
-      fin >> v4i[0]; // first "v//vn"
-      fin.ignore(2); // remove "//"
-      fin >> v1i;    // all vn in "v//vn" are same
+      fin >> tempFace[0]; // first "v//vn"
+      fin.ignore(2);      // remove "//"
+      fin >> tempFace[3]; // all vn in "v//vn" are same
 
-      fin >> v4i[1]; // second "v//vn"
+      fin >> tempFace[1]; // second "v//vn"
       fin.ignore(2);
-      fin >> v1i;
+      fin >> tempFace[3];
 
-      fin >> v4i[2]; // third "v//vn"
+      fin >> tempFace[2]; // third "v//vn"
       fin.ignore(2);
-      fin >> v1i;
+      fin >> tempFace[3];
 
-      // in case we are dealing with triangle face
-      if (fin.peek() != '\n') {
-        fin >> v4i[3]; // fourth "v//vn"
-        fin.ignore(2);
-        fin >> v1i;
-      } else {
-        v4i[3] = -1; // means "no value"
-      }
-
-      // CAUTION:
+      // Note:
       //  v and vn in "v//vn" start from 1,
       //  but indices of std::vector start from 0,
-      //  so we need (v4i - 1), (v1i - 1)
-      tempFaceContainedVertexIndex.push_back(v4i - 1);
-      tempFaceNormalIndex.push_back(v1i - 1);
-
-      faceNumber++;
+      //  so we need minus 1 for all elements
+      tempFace -= glm::ivec4(1, 1, 1, 1);
+      outMesh.faces.push_back(tempFace);
+    } else {
+      continue;
     }
   } // end read obj loop
 
   fin.close();
 
-  /* Computing mesh information from those temp*s */
-  mesh_info_t meshInfo;
-
-  for (size_t i = 0; i < vertexNumber; i++) {
-    vertex_info_t vertexInfo;
-
-    vertexInfo.vertexIndex = i;
-    vertexInfo.vertexCoordinate = tempV[i];
-
-    meshInfo.vertexTable.push_back(vertexInfo);
-  }
-
-  for (size_t i = 0; i < faceNumber; i++) {
-    face_info_t faceInfo;
-
-    faceInfo.faceIndex = i;
-    faceInfo.containedVertexIndex = tempFaceContainedVertexIndex[i];
-    faceInfo.faceNormal = tempVn[tempFaceNormalIndex[i]];
-
-    meshInfo.faceTable.push_back(faceInfo);
-  }
-
-  /* compute "connected face index" */
-  // check "contained vertex index" in face table,
-  // write "face index" to "connected face index"
-  for (size_t i = 0; i < faceNumber; i++) {
-    // for convenience
-    ivec4 &cvIdx = meshInfo.faceTable[i].containedVertexIndex;
-
-    for (size_t j = 0; j < 4; j++) { // ivec4 has 4 elements
-      // for convenience
-      int vtxIdx = cvIdx[j];
-      vector<int> &cfIdx = meshInfo.vertexTable[vtxIdx].connectedFaceIndex;
-
-      if (-1 != vtxIdx) {   // in case we are dealing with a triangle face
-        cfIdx.push_back(i); //"i" equals to face index
-      }
-    }
-  }
-
-  /* compute "vertex normal" */
-  // check "connected face index" in vertex table,
-  // extract "face normal" corresponding to "connected face index",
-  // summerize them and compute their mean
-  for (size_t i = 0; i < vertexNumber; i++) {
-    vector<int> &cfIdx = meshInfo.vertexTable[i].connectedFaceIndex;
-    vec3 vtxNormal(0.f);
-
-    // summerize
-    for (size_t j = 0; j < cfIdx.size(); j++) {
-      int faceIdx = cfIdx[j];
-      face_info_t faceInfo = meshInfo.faceTable[faceIdx];
-      vtxNormal += faceInfo.faceNormal;
-    }
-    vtxNormal /= cfIdx.size(); // means
-
-    // always normalize
-    meshInfo.vertexTable[i].vertexNormal = normalize(vtxNormal);
-  }
-
-  return meshInfo;
+  return outMesh;
 }
 
-GLuint create_shader(string filename, GLenum type) {
+GLuint createShader(std::string filename, GLenum type) {
   /* read source code */
-  string sTemp = read_file(filename);
-  string info;
+  std::string sTemp = readFile(filename);
+  std::string info;
   const GLchar *source = sTemp.c_str();
 
   switch (type) {
@@ -199,7 +119,7 @@ void printLog(GLuint &object) {
   } else if (glIsProgram(object)) {
     glGetProgramiv(object, GL_INFO_LOG_LENGTH, &log_length);
   } else {
-    cerr << "printlog: Not a shader or a program" << endl;
+    std::cout << "printlog: Not a shader or a program" << std::endl;
     return;
   }
 
@@ -210,39 +130,18 @@ void printLog(GLuint &object) {
   else if (glIsProgram(object))
     glGetProgramInfoLog(object, log_length, NULL, log);
 
-  cerr << log << endl;
+  std::cout << log << '\n';
 
   free(log);
 }
 
-// convert quadrangle face to triangle face
-// return triangle indices
-vector<ivec3> quad2tri(mesh_info_t &mesh) {
-  vector<ivec3> triangleIndices;
-  int times = mesh.faceTable.size();
-
-  for (size_t i = 0; i < times; i++) {
-    ivec4 vtxidx = mesh.faceTable[i].containedVertexIndex;
-
-    // triangle one
-    triangleIndices.push_back(ivec3(vtxidx[0], vtxidx[1], vtxidx[2]));
-
-    // if there is triangle two
-    if (-1 != vtxidx[3]) {
-      triangleIndices.push_back(ivec3(vtxidx[2], vtxidx[3], vtxidx[0]));
-    }
-  }
-
-  return triangleIndices;
-}
-
-GLint myGetUniformLocation(GLuint &prog, string name) {
+GLint myGetUniformLocation(GLuint &prog, std::string name) {
   GLint location;
   location = glGetUniformLocation(prog, name.c_str());
   if (location == -1) {
-    cerr << "Could not bind uniform : " << name << ". "
-         << "Did you set the right name? "
-         << "Or is " << name << " not used?" << endl;
+    std::cout << "Could not bind uniform : " << name << ". "
+              << "Did you set the right name? "
+              << "Or is " << name << " not used?" << std::endl;
   }
 
   return location;

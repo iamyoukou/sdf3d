@@ -12,34 +12,18 @@
 
 #include <GLFW/glfw3.h>
 
-using namespace std;
-using namespace glm;
-
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-struct vertex_info_t {
-  int vertexIndex;
-  vec3 vertexCoordinate;
-  vec3 vertexNormal;
-  vector<int> connectedFaceIndex;
+struct Mesh {
+  std::vector<glm::vec3> vertices;
+  std::vector<glm::vec3> faceNormals;
+  std::vector<glm::ivec4> faces;
 };
 
-struct face_info_t {
-  int faceIndex;
-  ivec4 containedVertexIndex;
-  vec3 faceNormal;
-};
-
-struct mesh_info_t {
-  vector<vertex_info_t> vertexTable;
-  vector<face_info_t> faceTable;
-};
-
-string read_file(const string);
-mesh_info_t load_obj(string);
-GLuint create_shader(string, GLenum);
+std::string readFile(const std::string);
+Mesh loadObj(std::string);
+GLuint createShader(std::string, GLenum);
 void printLog(GLuint &);
-vector<ivec3> quad2tri(mesh_info_t &);
-GLint myGetUniformLocation(GLuint &, string);
+GLint myGetUniformLocation(GLuint &, std::string);
 void keyCallback(GLFWwindow *, int, int, int, int);

@@ -18,7 +18,7 @@ main: main.o common.o
 	rm -f *.o
 
 test: test.o common.o sdf.o
-	g++ $(LIBS) $^ -o test
+	g++ -g $(LIBS) $^ -o test
 	rm -f *.o
 
 test.o: ./src/test.cpp
