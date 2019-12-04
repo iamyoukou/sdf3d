@@ -15,11 +15,19 @@ glm::vec2 lineUv(glm::vec3 a, glm::vec3 b, glm::vec3 q) {
   return glm::vec2(u, v);
 }
 
-float signedArea(glm::vec3 v1, glm::vec3 v2) {
-  glm::vec3 temp = glm::cross(v1, v2);
-  // std::cout << glm::to_string(temp) << '\n';
-  float sign = temp.z / glm::abs(temp.z);
-  float sa = glm::length(temp) * sign;
+float signedArea(glm::vec3 v1, glm::vec3 v2, glm::vec3 n) {
+  glm::vec3 resCross = glm::cross(v1, v2);
+  // std::cout << "cross = " << glm::to_string(resCross) << '\n';
+
+  // if cross(v1, v2) is in the same direction with n
+  // then let sign be +1, otherwise, -1
+  float sign = glm::dot(n, glm::normalize(resCross));
+  // float sign = (resDot > 0) ? 1.f : -1.f;
+  // std::cout << "resDot = " << resDot << '\n';
+
+  float sa = glm::length(resCross) * sign;
+  // std::cout << "cross length = " << glm::length(resCross) << '\n';
+  // std::cout << "area sign = " << sign << '\n';
 
   return sa;
 }
@@ -31,7 +39,12 @@ float signedArea(glm::vec3 v1, glm::vec3 v2) {
 // Return (u, v, w)
 // Note that the order of vectors in cross product is important,
 // so be careful when calculate the area.
-glm::vec3 baryCoord(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
+// N: surface normal of ABC
+// N is used to determine the sign of the signed area
+// i.e. check whether N is in the same direction
+// with cross(AB, AP), cross(BC, BP), cross(CA, CP)
+glm::vec3 baryCoord(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
+                    glm::vec3 p) {
   glm::vec3 ab = b - a;
   glm::vec3 bc = c - b;
   glm::vec3 ca = a - c;
@@ -45,19 +58,19 @@ glm::vec3 baryCoord(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
   // to get triangle area.
   // However, 0.5 will be cancelled in the ratio.
   // So 0.5 can be avoided here.
-  float Sabc = signedArea(ab, ac);
-  float Sabp = signedArea(ab, ap);
-  float Sbcp = signedArea(bc, bp);
-  float Sacp = signedArea(ca, cp);
+  float Sabc = signedArea(ab, ac, n);
+  float Sabp = signedArea(ab, ap, n);
+  float Sbcp = signedArea(bc, bp, n);
+  float Scap = signedArea(ca, cp, n);
 
   // std::cout << "Sabc = " << Sabc << '\n';
   // std::cout << "Sabp = " << Sabp << '\n';
   // std::cout << "Sbcp = " << Sbcp << '\n';
-  // std::cout << "Sacp = " << Sacp << '\n';
+  // std::cout << "Scap = " << Scap << '\n';
 
   float u, v, w;
   u = Sbcp / Sabc;
-  v = Sacp / Sabc;
+  v = Scap / Sabc;
   w = Sabp / Sabc;
 
   return glm::vec3(u, v, w);
@@ -65,16 +78,17 @@ glm::vec3 baryCoord(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
 
 // Projecting a point to a plane
 // Point is defined by P
-// Plane is define by A, B, C
+// Plane is define by A, B, C, and normal N
 // Return the projected point P'
-glm::vec3 point2plane(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
+glm::vec3 point2plane(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
+                      glm::vec3 p) {
   glm::vec3 ab, ac, ap;
   ab = b - a;
   ac = c - a;
   ap = p - a;
 
   // surface normal
-  glm::vec3 n = glm::normalize(glm::cross(ab, ac));
+  // glm::vec3 n = glm::normalize(glm::cross(ab, ac));
 
   // PP'
   glm::vec3 ppProj = -glm::dot(ap, n) * n;
@@ -92,26 +106,40 @@ glm::vec3 point2plane(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
 
 // Distance between a point and a triangle
 // Triangle is defined by A, B, C in counter-clockwise
-// (and maybe a surface normal N if provided)
+// and a surface normal N
 // Point: P
-float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
+float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
+                         glm::vec3 p) {
   float dist = 9999.f;
 
+  glm::vec3 ap = p - a;
+  float sign = glm::dot(ap, n);
+  // std::cout << "dot(ap, n) = " << sign << '\n';
+  sign /= glm::abs(sign);
+  // std::cout << "sign = " << sign << '\n';
+
+  // (necessary?)
+  // if dot(ap, n) < 0, then re-order A, B, C
+  // glm::vec3 tempB = b;
+  // b = c;
+  // c = tempB;
+
   // Project P onto a plane at P'
-  glm::vec3 Pproj = point2plane(a, b, c, p);
+  glm::vec3 Pproj = point2plane(a, b, c, n, p);
   // std::cout << "P projected = " << glm::to_string(Pproj) << '\n';
-  // std::cout << glm::dot(n, P1 - a) << '\n';
 
   // barycentric coordinate of P'
-  glm::vec3 Pbary = baryCoord(a, b, c, Pproj);
+  glm::vec3 Pbary = baryCoord(a, b, c, n, Pproj);
   // std::cout << glm::to_string(Pbary) << '\n';
 
   // P' is inside ABC
   if ((Pbary.x > 0 && Pbary.x < 1.f) && (Pbary.y > 0 && Pbary.y < 1.f) &&
       (Pbary.z > 0 && Pbary.z < 1.f)) {
-    std::cout << "P' is inside triangle" << '\n';
-    glm::vec3 n = glm::normalize(glm::cross(b - a, c - a));
-    dist = glm::dot(n, p - a);
+    // std::cout << "P' is inside triangle" << '\n';
+    // glm::vec3 n = glm::normalize(glm::cross(b - a, c - a));
+
+    // For convenience, I multiply the sign later in the return statement
+    dist = glm::abs(glm::dot(n, p - a));
   }
   // When P' is outside ABC,
   // find the closest edge or vertex
@@ -125,7 +153,7 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
     uvCa = lineUv(c, a, Pproj);
 
     // Calculate 3 barycentric  parameters
-    glm::vec3 uvwAbc = baryCoord(a, b, c, Pproj);
+    glm::vec3 uvwAbc = baryCoord(a, b, c, n, Pproj);
 
     // std::cout << "uvAb = " << glm::to_string(uvAb) << '\n';
     // std::cout << "uvBc = " << glm::to_string(uvBc) << '\n';
@@ -134,18 +162,18 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
 
     // first: vertex regions
     if (uvAb[1] <= 0 && uvCa[0] <= 0) {
-      std::cout << "region A" << '\n';
+      // std::cout << "region A" << '\n';
       dist = glm::length(p - a);
     } else if (uvAb[0] <= 0 && uvBc[1] <= 0) {
-      std::cout << "region B" << '\n';
+      // std::cout << "region B" << '\n';
       dist = glm::length(p - b);
     } else if (uvBc[0] <= 0 && uvCa[1] <= 0) {
-      std::cout << "region C" << '\n';
+      // std::cout << "region C" << '\n';
       dist = glm::length(p - c);
     }
     // Second: edge regions
     else if (uvAb[0] > 0 && uvAb[1] > 0 && uvwAbc[2] <= 0) {
-      std::cout << "region AB" << '\n';
+      // std::cout << "region AB" << '\n';
       glm::vec3 dirAb = glm::normalize(b - a);
       glm::vec3 APproj = Pproj - a;
       float frac = glm::dot(APproj, dirAb);
@@ -153,7 +181,7 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
       // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = glm::length(p - Pinter);
     } else if (uvBc[0] > 0 && uvBc[1] > 0 && uvwAbc[0] <= 0) {
-      std::cout << "region BC" << '\n';
+      // std::cout << "region BC" << '\n';
       glm::vec3 dirBc = glm::normalize(c - b);
       glm::vec3 BPproj = Pproj - b;
       float frac = glm::dot(BPproj, dirBc);
@@ -161,7 +189,7 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
       // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = glm::length(p - Pinter);
     } else if (uvCa[0] > 0 && uvCa[1] > 0 && uvwAbc[1] <= 0) {
-      std::cout << "region CA" << '\n';
+      // std::cout << "region CA" << '\n';
       glm::vec3 dirCa = glm::normalize(a - c);
       glm::vec3 CPproj = Pproj - c;
       float frac = glm::dot(CPproj, dirCa);
@@ -169,9 +197,9 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
       // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = glm::length(p - Pinter);
     }
+  } // end if P' is outside ABC
 
-    // std::cout << "dist = " << dist << '\n';
-  } // end if P' is inside ABC
+  // std::cout << "dist = " << dist << '\n';
 
-  return dist;
+  return dist * sign;
 }

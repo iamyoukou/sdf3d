@@ -37,11 +37,11 @@ Here, `(u, v, w)` is called the barycentric coordinate of `P` with respect to `A
 
 `(u, v, w)` can be calculated using the ratio of triangle areas.
 
-Let `Sabc`, `Sabp`, `Sbcp` and `Sacp` be the area of triangle `ABC`, `ABP`, `BCP` and `ACP`, respectively.
+Let `Sabc`, `Sabp`, `Sbcp` and `Scap` be the area of triangle `ABC`, `ABP`, `BCP` and `ACP`, respectively.
 Then `(u, v, w)` can be calculated as
 ```
 u = Sbcp/Sabc
-v = Sacp/Sabc
+v = Scap/Sabc
 w = Sabp/Sabc
 ```
 
@@ -63,10 +63,25 @@ the four areas will have different signs.
 In this case, we must use something like
 ```
 vec3 temp = cross(AB, AC);
-float sign = temp.z / abs(temp.z);
 float area = 0.5 * length(temp) * sign;
 ```
 to calculate the signed area.
+
+In 2D, we can use the z-component to decide `sign`, i.e.
+```
+float sign = (temp.z > 0) ? 1 : -1;
+```
+In 3D, However, things become a little different because `temp` can points to any direction.
+As a result, we cannot decide `sign` only based on z-component.
+
+Instead, we can use the surface normal `N` of `ΔABC`.
+If `temp` points to the same direction as `N` does,
+then we decide `sign = 1`.
+Otherwise, `sign = -1`, i.e.
+```
+float sign = dot(normalize(temp), N);
+```
+
 
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.
