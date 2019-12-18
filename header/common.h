@@ -15,10 +15,20 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-struct Mesh {
+class Mesh {
+public:
   std::vector<glm::vec3> vertices;
   std::vector<glm::vec3> faceNormals;
   std::vector<glm::ivec4> faces;
+
+  /* Constructors */
+  Mesh(){};
+  ~Mesh(){};
+
+  /* Member functions */
+  void translate(glm::vec3);
+  void scale(glm::vec3);
+  void rotate(glm::vec3);
 };
 
 std::string readFile(const std::string);

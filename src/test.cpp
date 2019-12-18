@@ -1,5 +1,9 @@
-#include "common.h"
-#include "sdf.h"
+#include <common.h>
+#include <sdf.h>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 int main(int argc, char const *argv[]) {
 
@@ -28,26 +32,93 @@ int main(int argc, char const *argv[]) {
   //           << '\n';
 
   Mesh mesh = loadObj("./model/cube.obj");
+  // Mesh mesh = loadObj("./model/cube30d.obj");
+  // Mesh mesh = loadObj("./model/cubeBig.obj");
+  // mesh.scale(glm::vec3(10, 10, 10));
+  // mesh.translate(glm::vec3(2, 2, 2));
 
-  glm::vec3 P(0.8, 0.5, 1.5);
-  float dist = 9999.f;
+  // glm::vec3 P(0.8, 0.5, 1.5);
+  // glm::vec3 Prot(0.8, -0.317, 1.55);
+  // float dist = 9999.f;
 
   // iterate each triangle
-  for (size_t i = 0; i < mesh.faces.size(); i++) {
-    glm::ivec4 face = mesh.faces[i];
+  // for (size_t i = 0; i < mesh.faces.size(); i++) {
+  //   glm::ivec4 face = mesh.faces[i];
+  //
+  //   glm::vec3 A, B, C, N;
+  //   A = mesh.vertices[face[0]];
+  //   B = mesh.vertices[face[1]];
+  //   C = mesh.vertices[face[2]];
+  //   N = mesh.faceNormals[face[3]];
+  //
+  //   // float temp = distPoint2Triangle(A, B, C, N, P);
+  //   float temp = distPoint2Triangle(A, B, C, N, Prot);
+  //   dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
+  //   std::cout << "triangle " << (i + 1) << ", temp = " << temp << '\n';
+  //   std::cout << '\n';
+  // }
+  // std::cout << "dist = " << dist << '\n';
 
-    glm::vec3 A, B, C, N;
-    A = mesh.vertices[face[0]];
-    B = mesh.vertices[face[1]];
-    C = mesh.vertices[face[2]];
-    N = mesh.faceNormals[face[3]];
+  glm::vec3 grid(4, 4, 4);
+  int WND_WIDTH = 100, WND_HEIGHT = 100;
+  float sdfScale = 100.f;
 
-    float temp = distPoint2Triangle(A, B, C, N, P);
-    dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-    std::cout << "triangle " << (i + 1) << ", temp = " << temp << '\n';
-    std::cout << '\n';
+  for (float x = 0; x < grid.x; x++) {
+    for (float y = 0; y < grid.y; y++) {
+      for (float z = 0; z < grid.z; z++) {
+        glm::vec3 P(x, y, z);
+        std::cout << "P = " << glm::to_string(P) << '\n';
+        float dist = 9999.f;
+
+        // iterate vertices
+        for (size_t i = 0; i < mesh.faces.size(); i++) {
+          glm::ivec4 face = mesh.faces[i];
+
+          glm::vec3 A, B, C, N;
+          A = mesh.vertices[face[0]];
+          B = mesh.vertices[face[1]];
+          C = mesh.vertices[face[2]];
+          N = mesh.faceNormals[face[3]];
+
+          // std::cout << "A = " << glm::to_string(A) << '\n';
+          // std::cout << "B = " << glm::to_string(B) << '\n';
+          // std::cout << "C = " << glm::to_string(C) << '\n';
+          // std::cout << "N = " << glm::to_string(N) << '\n';
+
+          float temp = distPoint2Triangle(A, B, C, N, P);
+          dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
+          std::cout << "temp = " << temp << '\n';
+
+        } // end iterate vertices
+        std::cout << dist << '\n';
+        std::cout << '\n';
+
+        // to image
+        cv::Mat canvas =
+            cv::Mat(WND_HEIGHT, WND_WIDTH, CV_8UC3, cv::Scalar(255, 255, 255));
+
+        for (int x = 0; x < WND_WIDTH; x++) {
+          for (int y = 0; y < WND_HEIGHT; y++) {
+
+            dist = ((dist / sdfScale) + 1.f) * 0.5f; // to [0.0, 1.0]
+            int iDist = (int)(dist * 255.f);         // to [0, 255]
+            // std::cout << "iDist = " << iDist << '\n';
+
+            // to window space
+            int ix = int(grid.x);
+            int iy = int(grid.y);
+
+            cv::Vec3b &pixel = canvas.at<cv::Vec3b>(cv::Point(ix, iy));
+            pixel = cv::Vec3b(iDist, iDist, iDist);
+          }
+        }
+        imwrite(cv::format("./result/sim%03d.png", int(z)), canvas);
+        canvas.release();
+
+        // std::cout << glm::to_string(P) << " dist = " << dist << '\n';
+      }
+    }
   }
-  std::cout << "dist = " << dist << '\n';
 
   return 0;
 }

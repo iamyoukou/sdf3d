@@ -180,3 +180,20 @@ void keyCallback(GLFWwindow *keyWnd, int key, int scancode, int action,
     }
   }
 }
+
+/* Mesh class */
+void Mesh::translate(glm::vec3 xyz) {
+  // move each vertex with xyz
+  for (size_t i = 0; i < vertices.size(); i++) {
+    vertices[i] += xyz;
+  }
+
+  // update aabb
+}
+
+void Mesh::scale(glm::vec3 xyz) {
+  // scale each vertex with xyz
+  // for (size_t i = 0; i < vertices.size(); i++) {
+  //
+  // }
+}
