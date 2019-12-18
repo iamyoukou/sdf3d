@@ -1,37 +1,42 @@
-INCS=-I/usr/local/Cellar/glew/2.1.0/include \
+CXX=llvm-g++
+INCS=-c -std=c++17 \
+-I/usr/local/Cellar/glew/2.1.0/include \
 -I/usr/local/Cellar/glfw/3.3/include \
 -I/usr/local/Cellar/freeimage/3.18.0/include \
 -I/usr/local/Cellar/anttweakbar/1.16/include \
 -I/usr/local/Cellar/glm/0.9.9.5/include \
+-I/usr/local/Cellar/opencv/4.1.2/include/opencv4 \
 -I/Users/YJ-work/sdf3d/header
 
 LIBS=-L/usr/local/Cellar/glew/2.1.0/lib -lglfw \
 -L/usr/local/Cellar/glfw/3.3/lib -lGLEW \
 -L/usr/local/Cellar/freeimage/3.18.0/lib -lfreeimage \
 -L/usr/local/Cellar/anttweakbar/1.16/lib -lAntTweakBar \
+-L/usr/local/Cellar/opencv/4.1.2/lib -lopencv_core -lopencv_highgui -lopencv_imgcodecs \
+-lopencv_imgproc \
 -framework GLUT -framework OpenGL -framework Cocoa
 
 all: main test
 
 main: main.o common.o
-	g++ $(LIBS) main.o common.o -o main
+	$(CXX) $(LIBS) main.o common.o -o main
 	rm -f *.o
 
 test: test.o common.o sdf.o
-	g++ -g $(LIBS) $^ -o test
+	$(CXX) -g $(LIBS) $^ -o test
 	rm -f *.o
 
 test.o: ./src/test.cpp
-	g++ -c $(INCS) ./src/test.cpp -o test.o
+	$(CXX) -c $(INCS) ./src/test.cpp -o test.o
 
 main.o: ./src/main.cpp
-	g++ -c $(INCS) ./src/main.cpp -o main.o
+	$(CXX) -c $(INCS) ./src/main.cpp -o main.o
 
 common.o: ./src/common.cpp
-	g++ -c $(INCS) ./src/common.cpp -o common.o
+	$(CXX) -c $(INCS) ./src/common.cpp -o common.o
 
 sdf.o: ./src/sdf.cpp
-	g++ -c $(INCS) ./src/sdf.cpp -o sdf.o
+	$(CXX) -c $(INCS) ./src/sdf.cpp -o sdf.o
 
 .PHONY: clean
 

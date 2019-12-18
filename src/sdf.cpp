@@ -16,18 +16,27 @@ glm::vec2 lineUv(glm::vec3 a, glm::vec3 b, glm::vec3 q) {
 }
 
 float signedArea(glm::vec3 v1, glm::vec3 v2, glm::vec3 n) {
+  float sa;
+
   glm::vec3 resCross = glm::cross(v1, v2);
   // std::cout << "cross = " << glm::to_string(resCross) << '\n';
 
-  // if cross(v1, v2) is in the same direction with n
-  // then let sign be +1, otherwise, -1
-  float sign = glm::dot(n, glm::normalize(resCross));
-  // float sign = (resDot > 0) ? 1.f : -1.f;
-  // std::cout << "resDot = " << resDot << '\n';
+  // in this case, area = 0
+  if (glm::length(resCross) == 0) {
+    sa = 0;
+  } else {
+    // if cross(v1, v2) is in the same direction with n
+    // then let sign be +1, otherwise, -1
+    // note: if resCross = (0, 0, 0),
+    // then normalize(resCross) results in nan
+    float sign = glm::dot(n, glm::normalize(resCross));
+    // float sign = (resDot > 0) ? 1.f : -1.f;
+    // std::cout << "resDot = " << resDot << '\n';
 
-  float sa = glm::length(resCross) * sign;
-  // std::cout << "cross length = " << glm::length(resCross) << '\n';
-  // std::cout << "area sign = " << sign << '\n';
+    sa = glm::length(resCross) * sign;
+    // std::cout << "cross length = " << glm::length(resCross) << '\n';
+    // std::cout << "area sign = " << sign << '\n';
+  }
 
   return sa;
 }
@@ -112,12 +121,6 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
                          glm::vec3 p) {
   float dist = 9999.f;
 
-  glm::vec3 ap = p - a;
-  float sign = glm::dot(ap, n);
-  // std::cout << "dot(ap, n) = " << sign << '\n';
-  sign /= glm::abs(sign);
-  // std::cout << "sign = " << sign << '\n';
-
   // (necessary?)
   // if dot(ap, n) < 0, then re-order A, B, C
   // glm::vec3 tempB = b;
@@ -130,11 +133,12 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
 
   // barycentric coordinate of P'
   glm::vec3 Pbary = baryCoord(a, b, c, n, Pproj);
-  // std::cout << glm::to_string(Pbary) << '\n';
+  // std::cout << "P' bary = " << glm::to_string(Pbary) << '\n';
 
   // P' is inside ABC
-  if ((Pbary.x > 0 && Pbary.x < 1.f) && (Pbary.y > 0 && Pbary.y < 1.f) &&
-      (Pbary.z > 0 && Pbary.z < 1.f)) {
+  // including: P' is on the edge or vertex
+  if ((Pbary.x >= 0 && Pbary.x <= 1.f) && (Pbary.y >= 0 && Pbary.y <= 1.f) &&
+      (Pbary.z >= 0 && Pbary.z <= 1.f)) {
     // std::cout << "P' is inside triangle" << '\n';
     // glm::vec3 n = glm::normalize(glm::cross(b - a, c - a));
 
@@ -200,6 +204,21 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
   } // end if P' is outside ABC
 
   // std::cout << "dist = " << dist << '\n';
+
+  // sign
+  // glm::vec3 ap = p - a;
+  float temp = glm::dot(p - a, n);
+  // if P is on the same plane of triangle
+  // if (temp == 0) {
+  //   sign = 1.f;
+  // } else {
+  //   // std::cout << "dot(ap, n) = " << sign << '\n';
+  //   sign = temp;
+  //   sign /= glm::abs(sign);
+  // }
+  float sign = (temp == 0) ? 1.f : (temp / glm::abs(temp));
+
+  // std::cout << "sign = " << sign << '\n';
 
   return dist * sign;
 }
