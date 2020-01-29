@@ -31,11 +31,11 @@ int main(int argc, char const *argv[]) {
   //                                 vec3(1, 2.5, 10))
   //           << '\n';
 
-  Mesh mesh = loadObj("./model/cube.obj");
-  // Mesh mesh = loadObj("./model/cube30d.obj");
+  // Mesh mesh = loadObj("./model/cube.obj");
+  Mesh mesh = loadObj("./model/cube30d.obj");
   // Mesh mesh = loadObj("./model/cubeBig.obj");
   // mesh.scale(glm::vec3(10, 10, 10));
-  // mesh.translate(glm::vec3(2, 2, 2));
+  mesh.translate(glm::vec3(5, 5, 5));
 
   // glm::vec3 P(0.8, 0.5, 1.5);
   // glm::vec3 Prot(0.8, -0.317, 1.55);
@@ -59,15 +59,20 @@ int main(int argc, char const *argv[]) {
   // }
   // std::cout << "dist = " << dist << '\n';
 
-  glm::vec3 grid(4, 4, 4);
-  int WND_WIDTH = 100, WND_HEIGHT = 100;
-  float sdfScale = 100.f;
+  glm::ivec3 grid(100, 100, 100); // grid index
+  int WND_WIDTH = grid.x, WND_HEIGHT = grid.y;
+  float cellSize = 0.1f;
+  float sdfScale = 15.f;
 
-  for (float x = 0; x < grid.x; x++) {
-    for (float y = 0; y < grid.y; y++) {
-      for (float z = 0; z < grid.z; z++) {
-        glm::vec3 P(x, y, z);
-        std::cout << "P = " << glm::to_string(P) << '\n';
+  for (int z = 0; z < grid.z; z++) {
+
+    // temporarily hold sdf of (x, y, ...)
+    float xySdf[100][100] = {};
+
+    for (int x = 0; x < grid.x; x++) {
+      for (int y = 0; y < grid.y; y++) {
+        glm::vec3 P = glm::vec3(x, y, z) * cellSize; // grid position
+        // std::cout << "P = " << glm::to_string(P) << '\n';
         float dist = 9999.f;
 
         // iterate vertices
@@ -87,37 +92,40 @@ int main(int argc, char const *argv[]) {
 
           float temp = distPoint2Triangle(A, B, C, N, P);
           dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-          std::cout << "temp = " << temp << '\n';
+          xySdf[x][y] = dist;
+          // std::cout << "temp = " << temp << '\n';
 
         } // end iterate vertices
-        std::cout << dist << '\n';
-        std::cout << '\n';
-
-        // to image
-        cv::Mat canvas =
-            cv::Mat(WND_HEIGHT, WND_WIDTH, CV_8UC3, cv::Scalar(255, 255, 255));
-
-        for (int x = 0; x < WND_WIDTH; x++) {
-          for (int y = 0; y < WND_HEIGHT; y++) {
-
-            dist = ((dist / sdfScale) + 1.f) * 0.5f; // to [0.0, 1.0]
-            int iDist = (int)(dist * 255.f);         // to [0, 255]
-            // std::cout << "iDist = " << iDist << '\n';
-
-            // to window space
-            int ix = int(grid.x);
-            int iy = int(grid.y);
-
-            cv::Vec3b &pixel = canvas.at<cv::Vec3b>(cv::Point(ix, iy));
-            pixel = cv::Vec3b(iDist, iDist, iDist);
-          }
-        }
-        imwrite(cv::format("./result/sim%03d.png", int(z)), canvas);
-        canvas.release();
+        // std::cout << xySdf[x][y] << '\n';
+        // std::cout << '\n';
 
         // std::cout << glm::to_string(P) << " dist = " << dist << '\n';
       }
     }
+
+    // to image
+    cv::Mat canvas =
+        cv::Mat(WND_HEIGHT, WND_WIDTH, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    for (int x = 0; x < grid.x; x++) {
+      for (int y = 0; y < grid.y; y++) {
+
+        float dist = ((xySdf[x][y] / sdfScale) + 1.f) * 0.5f;  // to [0.0, 1.0]
+        int iDist = int(glm::clamp(dist * 255.f, 0.f, 255.f)); // to [0, 255]
+        // std::cout << "(" << x << "," << y << "," << z << "): "
+        //           << "iDist = " << iDist << '\n';
+
+        // to window space
+        // int ix = grid.x;
+        // int iy = grid.y;
+
+        cv::Vec3b &pixel = canvas.at<cv::Vec3b>(cv::Point(x, y));
+        pixel = cv::Vec3b(iDist, iDist, iDist);
+      }
+    }
+    imwrite(cv::format("./result/sim%03d.png", int(z)), canvas);
+    canvas.release();
+    std::cout << "level " << z << " completed." << '\n';
   }
 
   return 0;

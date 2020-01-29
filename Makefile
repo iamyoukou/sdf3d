@@ -1,18 +1,18 @@
 CXX=llvm-g++
 INCS=-c -std=c++17 \
--I/usr/local/Cellar/glew/2.1.0/include \
--I/usr/local/Cellar/glfw/3.3/include \
+-I/usr/local/Cellar/glew/2.1.0_1/include \
+-I/usr/local/Cellar/glfw/3.3.1/include \
 -I/usr/local/Cellar/freeimage/3.18.0/include \
 -I/usr/local/Cellar/anttweakbar/1.16/include \
 -I/usr/local/Cellar/glm/0.9.9.5/include \
--I/usr/local/Cellar/opencv/4.1.2/include/opencv4 \
+-I/usr/local/Cellar/opencv/4.2.0_1/include/opencv4 \
 -I/Users/YJ-work/sdf3d/header
 
-LIBS=-L/usr/local/Cellar/glew/2.1.0/lib -lglfw \
--L/usr/local/Cellar/glfw/3.3/lib -lGLEW \
+LIBS=-L/usr/local/Cellar/glew/2.1.0_1/lib -lglfw \
+-L/usr/local/Cellar/glfw/3.3.1/lib -lGLEW \
 -L/usr/local/Cellar/freeimage/3.18.0/lib -lfreeimage \
 -L/usr/local/Cellar/anttweakbar/1.16/lib -lAntTweakBar \
--L/usr/local/Cellar/opencv/4.1.2/lib -lopencv_core -lopencv_highgui -lopencv_imgcodecs \
+-L/usr/local/Cellar/opencv/4.2.0_1/lib -lopencv_core -lopencv_highgui -lopencv_imgcodecs \
 -lopencv_imgproc \
 -framework GLUT -framework OpenGL -framework Cocoa
 
@@ -38,7 +38,10 @@ common.o: ./src/common.cpp
 sdf.o: ./src/sdf.cpp
 	$(CXX) -c $(INCS) ./src/sdf.cpp -o sdf.o
 
-.PHONY: clean
+.PHONY: clean video
 
 clean:
-	rm -vf main
+	rm -vf main test ./result/*
+
+video:
+	ffmpeg -r 60 -start_number 0 -i ./result/sim%03d.png -vcodec mpeg4 -b:v 30M -s 100x100 ./video/result.mp4
