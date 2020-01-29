@@ -16,15 +16,16 @@ float mouseSpeed = 0.005f;
 float farPlane = 2000.f;
 float dudv_move = 0.f;
 
-vec3 eyePoint = vec3(5.7f, 9.7f, -5.9f);
-vec3 eyeDirection =
-    vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
-         sin(verticalAngle) * sin(horizontalAngle));
-vec3 up = vec3(0.f, 1.f, 0.f);
+glm::vec3 eyePoint = glm::vec3(5.7f, 9.7f, -5.9f);
+glm::vec3 eyeDirection =
+    glm::vec3(glm::sin(verticalAngle) * glm::cos(horizontalAngle),
+              glm::cos(verticalAngle),
+              glm::sin(verticalAngle) * glm::sin(horizontalAngle));
+glm::vec3 up = glm::vec3(0.f, 1.f, 0.f);
 
-mat4 matOriModel, matModel, matView, matProject;
+glm::mat4 matOriModel, matModel, matView, matProject;
 
-const string projectDir = "/Users/YJ-work/sdf3d/shader/";
+const std::string projectDir = "/Users/YJ-work/sdf3d/shader/";
 
 // must be the same value as the location parameter in vertex shader
 GLuint boxVaoVtxIdx = 8, boxVaoClrIdx = 9;
@@ -71,10 +72,9 @@ void initGL() {
 }
 
 void buildShader() {
-  vtxShader =
-      create_shader(projectDir + "vertex_shader.glsl", GL_VERTEX_SHADER);
+  vtxShader = createShader(projectDir + "vertex_shader.glsl", GL_VERTEX_SHADER);
   fragShader =
-      create_shader(projectDir + "fragment_shader.glsl", GL_FRAGMENT_SHADER);
+      createShader(projectDir + "fragment_shader.glsl", GL_FRAGMENT_SHADER);
 
   programObj = glCreateProgram();
   glAttachShader(programObj, vtxShader);
@@ -115,16 +115,17 @@ void recomputeMatrices() {
   verticalAngle += mouseSpeed * float(-ypos + WINDOW_HEIGHT / 2.f);
 
   // Direction : Spherical coordinates to Cartesian coordinates conversion
-  vec3 direction =
-      vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
-           sin(verticalAngle) * sin(horizontalAngle));
+  glm::vec3 direction =
+      glm::vec3(glm::sin(verticalAngle) * glm::cos(horizontalAngle),
+                glm::cos(verticalAngle),
+                glm::sin(verticalAngle) * glm::sin(horizontalAngle));
 
   // Right vector
-  vec3 right = vec3(cos(horizontalAngle - 3.14 / 2.f), 0.f,
-                    sin(horizontalAngle - 3.14 / 2.f));
+  glm::vec3 right = glm::vec3(glm::cos(horizontalAngle - 3.14 / 2.f), 0.f,
+                              glm::sin(horizontalAngle - 3.14 / 2.f));
 
   // new up vector
-  vec3 newUp = cross(right, direction);
+  glm::vec3 newUp = cross(right, direction);
 
   // Move forward
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -143,52 +144,52 @@ void recomputeMatrices() {
     eyePoint -= right * deltaTime * speed;
   }
 
-  matView = lookAt(eyePoint, eyePoint + direction, newUp);
-  matProject = perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f,
-                           farPlane);
+  matView = glm::lookAt(eyePoint, eyePoint + direction, newUp);
+  matProject = glm::perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT,
+                                0.1f, farPlane);
 
   // For the next frame, the "last time" will be "now"
   lastTime = currentTime;
 
-  mat4 mvp = matProject * matView * matModel;
+  glm::mat4 mvp = matProject * matView * matModel;
   glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, value_ptr(mvp));
 }
 
 void initMatrices() {
   uniform_mvp = glGetUniformLocation(programObj, "mvp");
 
-  matModel = translate(mat4(1.f), vec3(0.f, 0.f, -4.f));
-  matView = lookAt(vec3(0.f, 2.f, 0.f),  // eye position
-                   vec3(0.f, 0.f, -4.f), // look at
-                   vec3(0.f, 1.f, 0.f)   // up
+  matModel = translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -4.f));
+  matView = glm::lookAt(glm::vec3(0.f, 2.f, 0.f),  // eye position
+                        glm::vec3(0.f, 0.f, -4.f), // look at
+                        glm::vec3(0.f, 1.f, 0.f)   // up
   );
   matProject =
-      perspective(45.f, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 10.f);
+      glm::perspective(45.f, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 10.f);
 
-  mat4 mvp = matProject * matView * matModel;
+  glm::mat4 mvp = matProject * matView * matModel;
 
   glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, value_ptr(mvp));
 }
 
-void drawBox(vec3 lb) {
+void drawBox(glm::vec3 lb) {
   float size = 1.0f;
 
   // first, write vertex coordinates into vector<vec3>
-  vector<vec3> vertices;
-  vertices.push_back(lb);                                // 0
-  vertices.push_back(vec3(lb + vec3(size, 0.f, 0.f)));   // 1
-  vertices.push_back(vec3(lb + vec3(size, 0.f, size)));  // 2
-  vertices.push_back(vec3(lb + vec3(0.f, 0.f, size)));   // 3
-  vertices.push_back(vec3(lb + vec3(size, size, 0.f)));  // 4
-  vertices.push_back(vec3(lb + vec3(size, size, size))); // 5
-  vertices.push_back(vec3(lb + vec3(0.f, size, size)));  // 6
-  vertices.push_back(vec3(lb + vec3(0.f, size, 0.f)));   // 7
+  std::vector<glm::vec3> vertices;
+  vertices.push_back(lb);                                          // 0
+  vertices.push_back(glm::vec3(lb + glm::vec3(size, 0.f, 0.f)));   // 1
+  vertices.push_back(glm::vec3(lb + glm::vec3(size, 0.f, size)));  // 2
+  vertices.push_back(glm::vec3(lb + glm::vec3(0.f, 0.f, size)));   // 3
+  vertices.push_back(glm::vec3(lb + glm::vec3(size, size, 0.f)));  // 4
+  vertices.push_back(glm::vec3(lb + glm::vec3(size, size, size))); // 5
+  vertices.push_back(glm::vec3(lb + glm::vec3(0.f, size, size)));  // 6
+  vertices.push_back(glm::vec3(lb + glm::vec3(0.f, size, 0.f)));   // 7
 
   // then, write vertex coordinates from vector<vec3> to array
   // 8 verices, 3 GLfloat per vertex
   GLfloat *vertexArray = new GLfloat[8 * 3];
   for (size_t i = 0; i < 8; i++) {
-    vec3 &vtxCoord = vertices[i];
+    glm::vec3 &vtxCoord = vertices[i];
     vertexArray[3 * i] = vtxCoord.x;
     vertexArray[3 * i + 1] = vtxCoord.y;
     vertexArray[3 * i + 2] = vtxCoord.z;
@@ -243,6 +244,10 @@ void drawBox(vec3 lb) {
   }
 
   delete[] vertexArray;
+  glDeleteBuffers(1, &vboVertex);
+  glDeleteBuffers(1, &vboColor);
+  glDeleteBuffers(1, &ibo);
+  glDeleteVertexArrays(1, &vao);
 }
 
 int main(int argc, char **argv) {
@@ -261,7 +266,7 @@ int main(int argc, char **argv) {
     for (size_t x = 0; x < 4; x++) {
       for (size_t y = 0; y < 4; y++) {
         for (size_t z = 0; z < 4; z++) {
-          vec3 pos = vec3(float(x), float(y), float(z));
+          glm::vec3 pos = glm::vec3(float(x), float(y), float(z));
           drawBox(pos);
         }
       }

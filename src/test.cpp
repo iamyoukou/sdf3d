@@ -32,8 +32,8 @@ int main(int argc, char const *argv[]) {
   //           << '\n';
 
   // Mesh mesh = loadObj("./model/cube.obj");
-  Mesh mesh = loadObj("./model/cube30d.obj");
-  // Mesh mesh = loadObj("./model/cubeBig.obj");
+  // Mesh mesh = loadObj("./model/cube30d.obj");
+  Mesh mesh = loadObj("./model/monkey.obj");
   // mesh.scale(glm::vec3(10, 10, 10));
   mesh.translate(glm::vec3(5, 5, 5));
 
