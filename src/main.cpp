@@ -69,6 +69,10 @@ void initGL() {
     getchar();
     glfwTerminate();
   }
+
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+  // glCullFace(GL_FRONT_AND_BACK);
 }
 
 void buildShader() {
@@ -171,6 +175,120 @@ void initMatrices() {
   glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, value_ptr(mvp));
 }
 
+void drawMesh(Mesh &tMesh) {
+  // # of faces
+  const int nFaces = tMesh.faces.size();
+
+  // # of normals
+  const int nNormals = nFaces;
+
+  // # of vertices
+  const int nVertices = nFaces * 3;
+
+  // prepare opengl objects
+  GLuint vao, vboVtx, vboClr, vboNml;
+
+  // std::cout << "# of vertices: " << nVertices << '\n';
+  // std::cout << "# of faces: " << nFaces << '\n';
+
+  // prepare arrays for vertex attributes
+  // vertex positions
+  // 3 vertices per face
+  // and 3 coordinates per vertex
+  GLfloat *vtxArray = new GLfloat[nVertices * 3];
+
+  // face normals
+  GLfloat *nmlArray = new GLfloat[nNormals * 3];
+
+  // colors
+  GLfloat *clrArray = new GLfloat[nVertices * 3];
+
+  // prepare data
+  for (int i = 0; i < nFaces; i++) {
+    // vertex 1
+    int vtxIdx = tMesh.faces[i][0];
+    vtxArray[i * 9 + 0] = tMesh.vertices[vtxIdx].x;
+    vtxArray[i * 9 + 1] = tMesh.vertices[vtxIdx].y;
+    vtxArray[i * 9 + 2] = tMesh.vertices[vtxIdx].z;
+
+    // color for vertex 1
+    clrArray[i * 9 + 0] = 0.f;
+    clrArray[i * 9 + 1] = 1.f;
+    clrArray[i * 9 + 2] = 0.f;
+
+    // vertex 2
+    vtxIdx = tMesh.faces[i][1];
+    vtxArray[i * 9 + 3] = tMesh.vertices[vtxIdx].x;
+    vtxArray[i * 9 + 4] = tMesh.vertices[vtxIdx].y;
+    vtxArray[i * 9 + 5] = tMesh.vertices[vtxIdx].z;
+
+    // color for vertex 2
+    clrArray[i * 9 + 3] = 0.f;
+    clrArray[i * 9 + 4] = 1.f;
+    clrArray[i * 9 + 5] = 0.f;
+
+    // vertex 3
+    vtxIdx = tMesh.faces[i][2];
+    vtxArray[i * 9 + 6] = tMesh.vertices[vtxIdx].x;
+    vtxArray[i * 9 + 7] = tMesh.vertices[vtxIdx].y;
+    vtxArray[i * 9 + 8] = tMesh.vertices[vtxIdx].z;
+
+    // color for vertex 3
+    clrArray[i * 9 + 6] = 0.f;
+    clrArray[i * 9 + 7] = 1.f;
+    clrArray[i * 9 + 8] = 0.f;
+
+    // normal
+    int nmlIdx = tMesh.faces[i][3];
+    nmlArray[i * 3 + 0] = tMesh.faceNormals[nmlIdx].x;
+    nmlArray[i * 3 + 1] = tMesh.faceNormals[nmlIdx].y;
+    nmlArray[i * 3 + 2] = tMesh.faceNormals[nmlIdx].z;
+  }
+
+  // prepare vao
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // prepare vbo
+  // vertex vbo
+  glGenBuffers(1, &vboVtx);
+  glBindBuffer(GL_ARRAY_BUFFER, vboVtx);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * nVertices * 3, vtxArray,
+               GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  // normal vbo
+  glGenBuffers(1, &vboNml);
+  glBindBuffer(GL_ARRAY_BUFFER, vboNml);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * nNormals * 3, nmlArray,
+               GL_STATIC_DRAW);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(1);
+
+  // color vbo
+  glGenBuffers(1, &vboClr);
+  glBindBuffer(GL_ARRAY_BUFFER, vboClr);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * nVertices * 3, clrArray,
+               GL_STATIC_DRAW);
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(2);
+
+  // draw mesh
+  glDrawArrays(GL_TRIANGLES, 0, nVertices);
+
+  // delete opengl objects
+  glDeleteBuffers(1, &vboVtx);
+  glDeleteBuffers(1, &vboClr);
+  glDeleteBuffers(1, &vboNml);
+  glDeleteVertexArrays(1, &vao);
+
+  // delete arrays
+  delete[] vtxArray;
+  delete[] clrArray;
+  delete[] nmlArray;
+}
+
 void drawBox(glm::vec3 lb) {
   float size = 1.0f;
 
@@ -250,10 +368,15 @@ void drawBox(glm::vec3 lb) {
   glDeleteVertexArrays(1, &vao);
 }
 
+Mesh mesh;
+
 int main(int argc, char **argv) {
   initGL();
   buildShader();
   initMatrices();
+
+  mesh = loadObj("./model/cube.obj");
+  // mesh = loadObj("./model/monkey.obj");
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window)) {
@@ -263,14 +386,16 @@ int main(int argc, char **argv) {
 
     recomputeMatrices();
 
-    for (size_t x = 0; x < 4; x++) {
-      for (size_t y = 0; y < 4; y++) {
-        for (size_t z = 0; z < 4; z++) {
-          glm::vec3 pos = glm::vec3(float(x), float(y), float(z));
-          drawBox(pos);
-        }
-      }
-    }
+    // for (size_t x = 0; x < 4; x++) {
+    //   for (size_t y = 0; y < 4; y++) {
+    //     for (size_t z = 0; z < 4; z++) {
+    //       glm::vec3 pos = glm::vec3(float(x), float(y), float(z));
+    //       drawBox(pos);
+    //     }
+    //   }
+    // }
+
+    drawMesh(mesh);
 
     // swap, event
     glfwSwapBuffers(window);
