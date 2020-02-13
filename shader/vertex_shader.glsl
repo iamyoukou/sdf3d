@@ -10,5 +10,5 @@ out vec3 fragmentColor;
 
 void main(){
     gl_Position = mvp * vec4( vPosition, 1.0 );
-    fragmentColor = vec3(0, dot(normalize(vNormal), normalize(vec3(1.0, 0.0, 0.0))), 0);
+    fragmentColor = vec3(0, dot(normalize(vNormal), normalize(vec3(1.0, 0.5, 0.75))), 0);
 }

@@ -179,11 +179,11 @@ void drawMesh(Mesh &tMesh) {
   // # of faces
   const int nFaces = tMesh.faces.size();
 
-  // # of normals
-  const int nNormals = nFaces;
-
   // # of vertices
   const int nVertices = nFaces * 3;
+
+  // # of normals
+  const int nNormals = nVertices;
 
   // prepare opengl objects
   GLuint vao, vboVtx, vboClr, vboNml;
@@ -198,7 +198,7 @@ void drawMesh(Mesh &tMesh) {
   GLfloat *vtxArray = new GLfloat[nVertices * 3];
 
   // face normals
-  GLfloat *nmlArray = new GLfloat[nNormals * 3];
+  GLfloat *nmlArray = new GLfloat[nVertices * 3];
 
   // colors
   GLfloat *clrArray = new GLfloat[nVertices * 3];
@@ -216,6 +216,12 @@ void drawMesh(Mesh &tMesh) {
     clrArray[i * 9 + 1] = 1.f;
     clrArray[i * 9 + 2] = 0.f;
 
+    // normal for vertex 1
+    int nmlIdx = tMesh.faces[i][3];
+    nmlArray[i * 9 + 0] = tMesh.faceNormals[nmlIdx].x;
+    nmlArray[i * 9 + 1] = tMesh.faceNormals[nmlIdx].y;
+    nmlArray[i * 9 + 2] = tMesh.faceNormals[nmlIdx].z;
+
     // vertex 2
     vtxIdx = tMesh.faces[i][1];
     vtxArray[i * 9 + 3] = tMesh.vertices[vtxIdx].x;
@@ -226,6 +232,11 @@ void drawMesh(Mesh &tMesh) {
     clrArray[i * 9 + 3] = 0.f;
     clrArray[i * 9 + 4] = 1.f;
     clrArray[i * 9 + 5] = 0.f;
+
+    // normal for vertex 2
+    nmlArray[i * 9 + 3] = tMesh.faceNormals[nmlIdx].x;
+    nmlArray[i * 9 + 4] = tMesh.faceNormals[nmlIdx].y;
+    nmlArray[i * 9 + 5] = tMesh.faceNormals[nmlIdx].z;
 
     // vertex 3
     vtxIdx = tMesh.faces[i][2];
@@ -238,11 +249,10 @@ void drawMesh(Mesh &tMesh) {
     clrArray[i * 9 + 7] = 1.f;
     clrArray[i * 9 + 8] = 0.f;
 
-    // normal
-    int nmlIdx = tMesh.faces[i][3];
-    nmlArray[i * 3 + 0] = tMesh.faceNormals[nmlIdx].x;
-    nmlArray[i * 3 + 1] = tMesh.faceNormals[nmlIdx].y;
-    nmlArray[i * 3 + 2] = tMesh.faceNormals[nmlIdx].z;
+    // normal for vertex 3
+    nmlArray[i * 9 + 6] = tMesh.faceNormals[nmlIdx].x;
+    nmlArray[i * 9 + 7] = tMesh.faceNormals[nmlIdx].y;
+    nmlArray[i * 9 + 8] = tMesh.faceNormals[nmlIdx].z;
   }
 
   // prepare vao
@@ -375,8 +385,8 @@ int main(int argc, char **argv) {
   buildShader();
   initMatrices();
 
-  mesh = loadObj("./model/cube.obj");
-  // mesh = loadObj("./model/monkey.obj");
+  // mesh = loadObj("./model/cube.obj");
+  mesh = loadObj("./model/monkey.obj");
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window)) {
