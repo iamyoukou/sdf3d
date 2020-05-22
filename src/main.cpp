@@ -25,7 +25,7 @@ glm::vec3 up = glm::vec3(0.f, 1.f, 0.f);
 
 glm::mat4 matOriModel, matModel, matView, matProject;
 
-const std::string projectDir = "/Users/YJ-work/sdf3d/shader/";
+const std::string shaderDir = "/Users/YJ-work/sdf3d/shader/";
 
 // must be the same value as the location parameter in vertex shader
 GLuint boxVaoVtxIdx = 8, boxVaoClrIdx = 9;
@@ -76,16 +76,21 @@ void initGL() {
 }
 
 void buildShader() {
-  vtxShader = createShader(projectDir + "vertex_shader.glsl", GL_VERTEX_SHADER);
-  fragShader =
-      createShader(projectDir + "fragment_shader.glsl", GL_FRAGMENT_SHADER);
+  GLint link_ok;
 
   programObj = glCreateProgram();
   glAttachShader(programObj, vtxShader);
   glAttachShader(programObj, fragShader);
 
+  // compile shaders
+  vtxShader = createShader(shaderDir + "vertex_shader.glsl", GL_VERTEX_SHADER);
+  fragShader =
+      createShader(shaderDir + "fragment_shader.glsl", GL_FRAGMENT_SHADER);
+
+  // link shaders
   glLinkProgram(programObj);
-  GLint link_ok;
+
+  // check result
   glGetProgramiv(programObj, GL_LINK_STATUS, &link_ok);
 
   if (link_ok == GL_FALSE) {

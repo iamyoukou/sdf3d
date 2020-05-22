@@ -5,10 +5,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-// class Grid {};
+#include <fstream>
 
 int main(int argc, char const *argv[]) {
-
+  std::vector<glm::vec3> pointCloud;
   // glm::vec3 A(1, -0.86, -0.5), B(-1, 0.86, 0.5), C(-1, -0.86, -0.5);
   // glm::vec3 P1(0, -1.615, 1.327);
   // glm::vec3 P2(0.481, 0.344, 0.717);
@@ -33,11 +33,11 @@ int main(int argc, char const *argv[]) {
   //                                 vec3(1, 2.5, 10))
   //           << '\n';
 
-  // Mesh mesh = loadObj("./model/cube.obj");
+  Mesh mesh = loadObj("./model/cube.obj");
   // Mesh mesh = loadObj("./model/cube30d.obj");
-  Mesh mesh = loadObj("./model/monkey.obj");
+  // Mesh mesh = loadObj("./model/monkey.obj");
   // mesh.scale(glm::vec3(10, 10, 10));
-  mesh.translate(glm::vec3(5, 5, 5));
+  mesh.translate(glm::vec3(0.5, 0.5, 0.5));
 
   // glm::vec3 P(0.8, 0.5, 1.5);
   // glm::vec3 Prot(0.8, -0.317, 1.55);
@@ -53,7 +53,7 @@ int main(int argc, char const *argv[]) {
   //   C = mesh.vertices[face[2]];
   //   N = mesh.faceNormals[face[3]];
   //
-  //   // float temp = distPoint2Triangle(A, B, C, N, P);
+  //   float temp = distPoint2Triangle(A, B, C, N, P);
   //   float temp = distPoint2Triangle(A, B, C, N, Prot);
   //   dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
   //   std::cout << "triangle " << (i + 1) << ", temp = " << temp << '\n';
@@ -61,15 +61,15 @@ int main(int argc, char const *argv[]) {
   // }
   // std::cout << "dist = " << dist << '\n';
 
-  glm::ivec3 grid(100, 100, 100); // grid index
+  glm::ivec3 grid(10, 10, 10); // grid index
   int WND_WIDTH = grid.x, WND_HEIGHT = grid.y;
-  float cellSize = 0.1f;
-  float sdfScale = 15.f;
+  float cellSize = 0.25f;
+  // float sdfScale = 15.f;
 
   for (int z = 0; z < grid.z; z++) {
 
     // temporarily hold sdf of (x, y, ...)
-    float xySdf[100][100] = {};
+    // float xySdf[10][10] = {};
 
     for (int x = 0; x < grid.x; x++) {
       for (int y = 0; y < grid.y; y++) {
@@ -94,41 +94,67 @@ int main(int argc, char const *argv[]) {
 
           float temp = distPoint2Triangle(A, B, C, N, P);
           dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-          xySdf[x][y] = dist;
+          // xySdf[x][y] = dist;
+          // std::cout << "dist = " << dist << '\n';
           // std::cout << "temp = " << temp << '\n';
 
         } // end iterate vertices
+
+        // use sdf3d as a solid voxelier
+        // if dist < threshold, output grid position
+        std::cout << glm::to_string(P) << " "
+                  << "dist = " << dist << '\n';
+        float threshold = 0.f;
+        if (dist < threshold) {
+          pointCloud.push_back(P);
+        }
+
         // std::cout << xySdf[x][y] << '\n';
         // std::cout << '\n';
 
         // std::cout << glm::to_string(P) << " dist = " << dist << '\n';
-      }
-    }
+      } // end iterate y
+    }   // end iterate x
 
     // to image
-    cv::Mat canvas =
-        cv::Mat(WND_HEIGHT, WND_WIDTH, CV_8UC3, cv::Scalar(255, 255, 255));
-
-    for (int x = 0; x < grid.x; x++) {
-      for (int y = 0; y < grid.y; y++) {
-
-        float dist = ((xySdf[x][y] / sdfScale) + 1.f) * 0.5f;  // to [0.0, 1.0]
-        int iDist = int(glm::clamp(dist * 255.f, 0.f, 255.f)); // to [0, 255]
-        // std::cout << "(" << x << "," << y << "," << z << "): "
-        //           << "iDist = " << iDist << '\n';
-
-        // to window space
-        // int ix = grid.x;
-        // int iy = grid.y;
-
-        cv::Vec3b &pixel = canvas.at<cv::Vec3b>(cv::Point(x, y));
-        pixel = cv::Vec3b(iDist, iDist, iDist);
-      }
-    }
-    imwrite(cv::format("./result/sim%03d.png", int(z)), canvas);
-    canvas.release();
-    std::cout << "level " << z << " completed." << '\n';
+    // cv::Mat canvas =
+    //     cv::Mat(WND_HEIGHT, WND_WIDTH, CV_8UC3, cv::Scalar(255, 255, 255));
+    //
+    // for (int x = 0; x < grid.x; x++) {
+    //   for (int y = 0; y < grid.y; y++) {
+    //
+    //     float dist = ((xySdf[x][y] / sdfScale) + 1.f) * 0.5f; // to
+    //     [ 0.0, 1.0 ] int iDist = int(glm::clamp(dist * 255.f, 0.f, 255.f));
+    //     // to[0, 255]
+    //         // std::cout << "(" << x << "," << y << "," << z << "): "
+    //         //           << "iDist = " << iDist << '\n';
+    //
+    //         // to window space
+    //         // int ix = grid.x;
+    //         // int iy = grid.y;
+    //
+    //         cv::Vec3b &pixel = canvas.at<cv::Vec3b>(cv::Point(x, y));
+    //     pixel = cv::Vec3b(iDist, iDist, iDist);
+    //   }
+    // }
+    // imwrite(cv::format("./result/sim%03d.png", int(z)), canvas);
+    // canvas.release();
+    // std::cout << "level " << z << " completed." << '\n';
   }
+
+  // write point cloud to file
+  std::ofstream output("output.txt");
+
+  for (size_t i = 0; i < pointCloud.size(); i++) {
+    output << pointCloud[i].x;
+    output << " ";
+    output << pointCloud[i].y;
+    output << " ";
+    output << pointCloud[i].z;
+    output << '\n';
+  }
+
+  output.close();
 
   return 0;
 }
