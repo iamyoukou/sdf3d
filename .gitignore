@@ -2,3 +2,5 @@ main
 solidVoxelizer
 test
 result/
+video/
+*.mp4
