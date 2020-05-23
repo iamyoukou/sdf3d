@@ -84,5 +84,19 @@ float sign = dot(normalize(temp), N);
 
 # Result
 
+## Use sdf3d as a solid voxelizer
+A common way to solid-voxelize a mesh is to [use octree](https://viscomp.alexandra.dk/?p=3836).
+
+A signed distance field can also be used as a solid voxelizer.
+```
+for the entire field:
+    if(signedDistance < 0) voxelPosition = cellPosition;
+```
+
+e.g. solid-voxelize a sphere using sdf3d
+
+![spherePointCloud](./image/spherePointCloud.png)
+
+
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.
