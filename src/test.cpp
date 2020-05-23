@@ -33,11 +33,12 @@ int main(int argc, char const *argv[]) {
   //                                 vec3(1, 2.5, 10))
   //           << '\n';
 
-  Mesh mesh = loadObj("./model/cube.obj");
+  // Mesh mesh = loadObj("./model/cube.obj");
   // Mesh mesh = loadObj("./model/cube30d.obj");
   // Mesh mesh = loadObj("./model/monkey.obj");
-  // mesh.scale(glm::vec3(10, 10, 10));
-  mesh.translate(glm::vec3(0.5, 0.5, 0.5));
+  Mesh mesh = loadObj("./model/sphere.obj");
+  mesh.translate(glm::vec3(2, 2, 2));
+  mesh.scale(glm::vec3(1, 1, 1));
 
   // glm::vec3 P(0.8, 0.5, 1.5);
   // glm::vec3 Prot(0.8, -0.317, 1.55);
@@ -61,9 +62,9 @@ int main(int argc, char const *argv[]) {
   // }
   // std::cout << "dist = " << dist << '\n';
 
-  glm::ivec3 grid(10, 10, 10); // grid index
+  glm::ivec3 grid(20, 20, 20); // grid index
   int WND_WIDTH = grid.x, WND_HEIGHT = grid.y;
-  float cellSize = 0.25f;
+  float cellSize = 0.15f;
   // float sdfScale = 15.f;
 
   for (int z = 0; z < grid.z; z++) {
@@ -102,8 +103,8 @@ int main(int argc, char const *argv[]) {
 
         // use sdf3d as a solid voxelier
         // if dist < threshold, output grid position
-        std::cout << glm::to_string(P) << " "
-                  << "dist = " << dist << '\n';
+        // std::cout << glm::to_string(P) << " "
+        //           << "dist = " << dist << '\n';
         float threshold = 0.f;
         if (dist < threshold) {
           pointCloud.push_back(P);

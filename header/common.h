@@ -21,6 +21,9 @@ public:
   std::vector<glm::vec3> faceNormals;
   std::vector<glm::ivec4> faces;
 
+  // aabb
+  glm::vec3 min, max;
+
   /* Constructors */
   Mesh(){};
   ~Mesh(){};
@@ -37,3 +40,5 @@ GLuint createShader(std::string, GLenum);
 void printLog(GLuint &);
 GLint myGetUniformLocation(GLuint &, std::string);
 void keyCallback(GLFWwindow *, int, int, int, int);
+void findAABB(Mesh &);
+void drawBox(glm::vec3, glm::vec3);

@@ -16,27 +16,36 @@ LIBS=-L/usr/local/Cellar/glew/2.1.0_1/lib -lglfw \
 -lopencv_imgproc \
 -framework GLUT -framework OpenGL -framework Cocoa
 
-all: main test
+SRC_DIR=/Users/YJ-work/sdf3d/src
+
+all: main test solidVoxelizer
 
 main: main.o common.o
-	$(CXX) $(LIBS) main.o common.o -o main
+	$(CXX) $(LIBS) $^ -o main
 	rm -f *.o
 
 test: test.o common.o sdf.o
 	$(CXX) -g $(LIBS) $^ -o test
 	rm -f *.o
 
-test.o: ./src/test.cpp
-	$(CXX) -c $(INCS) ./src/test.cpp -o test.o
+solidVoxelizer: solidVoxelizer.o common.o sdf.o
+	$(CXX) -g $(LIBS) $^ -o solidVoxelizer
+	rm -f *.o
 
-main.o: ./src/main.cpp
-	$(CXX) -c $(INCS) ./src/main.cpp -o main.o
+test.o: $(SRC_DIR)/test.cpp
+	$(CXX) -c $(INCS) $^ -o test.o
 
-common.o: ./src/common.cpp
-	$(CXX) -c $(INCS) ./src/common.cpp -o common.o
+main.o: $(SRC_DIR)/main.cpp
+	$(CXX) -c $(INCS) $^ -o main.o
 
-sdf.o: ./src/sdf.cpp
-	$(CXX) -c $(INCS) ./src/sdf.cpp -o sdf.o
+common.o: $(SRC_DIR)/common.cpp
+	$(CXX) -c $(INCS) $^ -o common.o
+
+sdf.o: $(SRC_DIR)/sdf.cpp
+	$(CXX) -c $(INCS) $^ -o sdf.o
+
+solidVoxelizer.o: $(SRC_DIR)/solidVoxelizer.cpp
+	$(CXX) -c $(INCS) $^ -o solidVoxelizer.o
 
 .PHONY: clean video
 

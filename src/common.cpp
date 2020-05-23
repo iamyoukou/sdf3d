@@ -197,3 +197,146 @@ void Mesh::scale(glm::vec3 xyz) {
   //
   // }
 }
+
+void findAABB(Mesh &mesh) {
+  int nOfVtxs = mesh.vertices.size();
+  glm::vec3 min(0, 0, 0), max(0, 0, 0);
+
+  for (size_t i = 0; i < nOfVtxs; i++) {
+    // vec3 &vtx = mesh.vertexTable[i].vertexCoordinate;
+    glm::vec3 vtx = mesh.vertices[i];
+
+    // x
+    if (vtx.x > max.x) {
+      max.x = vtx.x;
+    }
+    if (vtx.x < min.x) {
+      min.x = vtx.x;
+    }
+    // y
+    if (vtx.y > max.y) {
+      max.y = vtx.y;
+    }
+    if (vtx.y < min.y) {
+      min.y = vtx.y;
+    }
+    // z
+    if (vtx.z > max.z) {
+      max.z = vtx.z;
+    }
+    if (vtx.z < min.z) {
+      min.z = vtx.z;
+    }
+  }
+
+  // mesh.minVertex = min;
+  // mesh.maxVertex = max;
+  // mesh.aabb.halfSize = 0.5f * (max - min);
+  // mesh.aabb.center = min + mesh.aabb.halfSize;
+  mesh.min = min;
+  mesh.max = max;
+}
+
+void drawBox(glm::vec3 min, glm::vec3 max) {
+  // first, write vertex coordinates into vector<vec3>
+  // vector<vec3> vertices;
+  // // vertex 0
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(-boxHalfSize.x, boxHalfSize.y, boxHalfSize.z)));
+  // // 1
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(-boxHalfSize.x, -boxHalfSize.y, boxHalfSize.z)));
+  // // 2
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(boxHalfSize.x, -boxHalfSize.y, boxHalfSize.z)));
+  // // 3
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(boxHalfSize.x, boxHalfSize.y, boxHalfSize.z)));
+  // // 4
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(-boxHalfSize.x, boxHalfSize.y, -boxHalfSize.z)));
+  // // 5
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(-boxHalfSize.x, -boxHalfSize.y,
+  //     -boxHalfSize.z)));
+  // // 6
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(boxHalfSize.x, -boxHalfSize.y, -boxHalfSize.z)));
+  // // 7
+  // vertices.push_back(
+  //     vec3(boxCenter + vec3(boxHalfSize.x, boxHalfSize.y, -boxHalfSize.z)));
+  //
+  // // then, write vertex coordinates from vector<vec3> to array
+  // // 8 verices, 3 GLfloat per vertex
+  // GLfloat *vertexArray = new GLfloat[8 * 3];
+  // for (size_t i = 0; i < 8; i++) {
+  //   vec3 &vtxCoord = vertices[i];
+  //   vertexArray[3 * i] = vtxCoord.x;
+  //   vertexArray[3 * i + 1] = vtxCoord.y;
+  //   vertexArray[3 * i + 2] = vtxCoord.z;
+  // }
+  GLfloat aVtxs[]{
+      min.x, max.y, min.z, // 0
+      min.x, min.y, min.z, // 1
+      max.x, min.y, min.z, // 2
+      max.x, max.y, min.z, // 3
+      min.x, max.y, max.z, // 4
+      min.x, min.y, max.z, // 5
+      max.x, min.y, max.z, // 6
+      max.x, max.y, max.z  // 7
+  };
+
+  // vertex color
+  // GLfloat colorArray[] = {color.x, color.y, color.z, color.x, color.y,
+  // color.z,
+  //                         color.x, color.y, color.z, color.x, color.y,
+  //                         color.z, color.x, color.y, color.z, color.x,
+  //                         color.y, color.z, color.x, color.y, color.z,
+  //                         color.x, color.y, color.z};
+
+  // vertex index
+  GLushort aIdxs[] = {
+      0, 1, 2, 3, // front face
+      4, 7, 6, 5, // back
+      4, 0, 3, 7, // up
+      5, 6, 2, 1, // down
+      0, 4, 5, 1, // left
+      3, 2, 6, 7  // right
+  };
+
+  // prepare buffers to draw
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  GLuint vboVtx;
+  glGenBuffers(1, &vboVtx);
+  glBindBuffer(GL_ARRAY_BUFFER, vboVtx);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 8 * 3, aVtxs, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  // GLuint vboColor;
+  // glGenBuffers(1, &vboColor);
+  // glBindBuffer(GL_ARRAY_BUFFER, vboColor);
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(colorArray), colorArray,
+  // GL_STATIC_DRAW); glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  // glEnableVertexAttribArray(1);
+
+  GLuint ibo;
+  glGenBuffers(1, &ibo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(aIdxs), aIdxs, GL_STATIC_DRAW);
+
+  // draw box
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+  for (size_t i = 0; i < 6; i++) {
+    glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT,
+                   (GLvoid *)(sizeof(GLushort) * 4 * i));
+  }
+
+  glDeleteBuffers(1, &vboVtx);
+  // glDeleteBuffers(1, &vboColor);
+  glDeleteBuffers(1, &ibo);
+  glDeleteVertexArrays(1, &vao);
+}
