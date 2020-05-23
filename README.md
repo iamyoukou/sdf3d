@@ -98,6 +98,5 @@ e.g. solid-voxelize a sphere using sdf3d
 
 ![spherePointCloud](./image/spherePointCloud.png)
 
-
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.
