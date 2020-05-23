@@ -15,18 +15,38 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
+using namespace std;
+using namespace glm;
+
+typedef struct {
+  // data index
+  GLuint v1, v2, v3;
+  GLuint vt1, vt2, vt3;
+  GLuint vn1, vn2, vn3;
+} Face;
+
 class Mesh {
 public:
   std::vector<glm::vec3> vertices;
+  std::vector<glm::vec2> uvs;
   std::vector<glm::vec3> faceNormals;
-  std::vector<glm::ivec4> faces;
+  std::vector<Face> faces;
+
+  // opengl data
+  GLuint vboVtxs, vboUvs, vboNormals;
+  GLuint vao;
 
   // aabb
   glm::vec3 min, max;
 
   /* Constructors */
   Mesh(){};
-  ~Mesh(){};
+  ~Mesh() {
+    glDeleteBuffers(1, &vboVtxs);
+    glDeleteBuffers(1, &vboUvs);
+    glDeleteBuffers(1, &vboNormals);
+    glDeleteVertexArrays(1, &vao);
+  };
 
   /* Member functions */
   void translate(glm::vec3);
@@ -36,7 +56,10 @@ public:
 
 std::string readFile(const std::string);
 Mesh loadObj(std::string);
-GLuint createShader(std::string, GLenum);
+GLuint buildShader(string, string);
+GLuint compileShader(string, GLenum);
+GLuint linkShader(GLuint, GLuint);
+void initMesh(Mesh &);
 void printLog(GLuint &);
 GLint myGetUniformLocation(GLuint &, std::string);
 void keyCallback(GLFWwindow *, int, int, int, int);
