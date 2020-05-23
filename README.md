@@ -83,6 +83,7 @@ float sign = dot(normalize(temp), N);
 ```
 
 # Result
+## Test sdf3d with a simple simulating program
 
 ## Use sdf3d as a solid voxelizer
 A common way to solid-voxelize a mesh is to [use octree](https://viscomp.alexandra.dk/?p=3836).
