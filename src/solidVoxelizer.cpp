@@ -52,7 +52,7 @@ void initShader();
 void releaseResource();
 
 void writePointCloud(vector<vec3> &, const string);
-int calGridHash(vec3);
+vec3 calCellPos(vec3);
 
 int main(int argc, char const *argv[]) {
   initGL();
@@ -60,7 +60,7 @@ int main(int argc, char const *argv[]) {
   initMatrix();
   initLight();
 
-  // std::vector<glm::vec3> pointCloud;
+  std::vector<glm::vec3> pointCloud;
 
   /* prepare mesh data */
   Mesh mesh = loadObj("./mesh/sphere.obj");
@@ -86,27 +86,26 @@ int main(int argc, char const *argv[]) {
   vec3 rangeMin = mesh.min - rangeOffset;
   vec3 rangeMax = mesh.max + rangeOffset;
 
-  // find the range of the selected area in x, y, z direction
-  vec3 rangeX = vec3(rangeMax.x, rangeMin.y, rangeMin.z);
-  vec3 rangeY = vec3(rangeMin.x, rangeMax.y, rangeMin.z);
-  vec3 rangeZ = vec3(rangeMin.x, rangeMin.y, rangeMax.z);
+  // find cells which cover those area
+  vec3 startCell = calCellPos(rangeMin);
+  vec3 endCell = calCellPos(rangeMax);
 
-  // find the corresponding grid index (or hash) of those ranges
-  int hashX = calGridHash(rangeX);
-  int hashY = calGridHash(rangeY);
-  int hashZ = calGridHash(rangeZ);
-
-  // std::cout << "aabb: " << '\n';
-  // std::cout << to_string(mesh.min) << '\n';
-  // std::cout << to_string(mesh.max) << '\n';
+  // std::cout << "range: " << '\n';
+  // std::cout << to_string(rangeMin) << '\n';
+  // std::cout << to_string(rangeMax) << '\n';
   //
-  // std::cout << "range:" << '\n';
-  // std::cout << to_string(rangeX) << '\n';
-  // std::cout << hashX << '\n';
-  // std::cout << to_string(rangeY) << '\n';
-  // std::cout << hashY << '\n';
-  // std::cout << to_string(rangeZ) << '\n';
-  // std::cout << hashZ << '\n';
+  // std::cout << "start cell: " << to_string(startCell) << '\n';
+  // std::cout << "end cell: " << to_string(endCell) << '\n';
+
+  // for the selected range
+  // for (size_t z = startHash; z < endHashZ; z++) {
+  //   for (size_t y = startHash; y < endHashY; y++) {
+  //     for (size_t x = startHash; x < endHashX; x++) {
+  //     }
+  //   }
+  // }
+  //
+  // writePointCloud(pointCloud, "output.txt");
 
   // for the entire grid
   // for (int z = 0; z < grid.z; z++) {
@@ -344,10 +343,21 @@ void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
   lastTime = currentTime;
 }
 
-int calGridHash(vec3 pt) {
-  int hx = int(floor(pt.x / cellSize));
-  int hy = int(floor(pt.y / cellSize) * nOfCells.x);
-  int hz = int(floor(pt.z / cellSize) * nOfCells.x * nOfCells.y);
+// calculate the position of the cell which covers the specified point
+vec3 calCellPos(vec3 pt) {
+  // change reference frame
+  vec3 ptRef = pt - gridOrigin;
 
-  return (hx + hy + hz);
+  // grid index along each axis of this cell
+  int ix = int(floor(ptRef.x / cellSize));
+  int iy = int(floor(ptRef.y / cellSize));
+  int iz = int(floor(ptRef.z / cellSize));
+
+  // position of this cell
+  vec3 posRef = vec3(ix * cellSize, iy * cellSize, iz * cellSize);
+
+  // change reference frame
+  vec3 pos = posRef + gridOrigin;
+
+  return pos;
 }
