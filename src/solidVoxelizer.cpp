@@ -31,7 +31,7 @@ vec3 up = vec3(0.f, 1.f, 0.f);
 /* for voxelizer */
 ivec3 nOfCells(4, 4, 4);
 float cellSize = 0.15f;
-vec3 girdOrigin(0, 0, 0);
+vec3 gridOrigin(0, 0, 0);
 float rangeOffset = 0.2f;
 
 /* opengl variables */
@@ -60,14 +60,17 @@ int main(int argc, char const *argv[]) {
   initMatrix();
   initLight();
 
-  std::vector<glm::vec3> pointCloud;
+  // std::vector<glm::vec3> pointCloud;
 
+  /* prepare mesh data */
   Mesh mesh = loadObj("./mesh/sphere.obj");
   initMesh(mesh);
   findAABB(mesh);
 
-  mesh.translate(glm::vec3(2, 2, 2));
-  mesh.scale(glm::vec3(1, 1, 1));
+  // transform mesh to (origin + offset) position
+  vec3 offset = (gridOrigin - mesh.min) + rangeOffset;
+  mesh.translate(offset);
+  updateMesh(mesh);
 
   /* find a searching range */
   // select an area a little bigger than mesh's aabb

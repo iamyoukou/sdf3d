@@ -65,3 +65,4 @@ GLint myGetUniformLocation(GLuint &, std::string);
 void keyCallback(GLFWwindow *, int, int, int, int);
 void findAABB(Mesh &);
 void drawBox(glm::vec3, glm::vec3);
+void updateMesh(Mesh &);
