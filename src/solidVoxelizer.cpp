@@ -29,10 +29,10 @@ vec3 eyeDirection =
 vec3 up = vec3(0.f, 1.f, 0.f);
 
 /* for voxelizer */
-ivec3 nOfCells(4, 4, 4);
-float cellSize = 0.15f;
+ivec3 nOfCells;
+float cellSize = 0.1f;
 vec3 gridOrigin(0, 0, 0);
-float rangeOffset = 0.2f;
+vec3 rangeOffset(0.2f, 0.2f, 0.2f);
 
 /* opengl variables */
 GLuint exeShader;
@@ -72,6 +72,15 @@ int main(int argc, char const *argv[]) {
   mesh.translate(offset);
   updateMesh(mesh);
 
+  /* grid parameters */
+  // The grid covers the area of mesh
+  // Between the grid and the mesh,
+  // there is a offset area which is defined by rangeOffset
+  vec3 gridSize = (mesh.max + rangeOffset * 2.0f) - gridOrigin;
+  nOfCells = ivec3(gridSize / cellSize);
+
+  // std::cout << "nOfCells = " << to_string(nOfCells) << '\n';
+
   /* find a searching range */
   // select an area a little bigger than mesh's aabb
   vec3 rangeMin = mesh.min - rangeOffset;
@@ -86,6 +95,18 @@ int main(int argc, char const *argv[]) {
   int hashX = calGridHash(rangeX);
   int hashY = calGridHash(rangeY);
   int hashZ = calGridHash(rangeZ);
+
+  // std::cout << "aabb: " << '\n';
+  // std::cout << to_string(mesh.min) << '\n';
+  // std::cout << to_string(mesh.max) << '\n';
+  //
+  // std::cout << "range:" << '\n';
+  // std::cout << to_string(rangeX) << '\n';
+  // std::cout << hashX << '\n';
+  // std::cout << to_string(rangeY) << '\n';
+  // std::cout << hashY << '\n';
+  // std::cout << to_string(rangeZ) << '\n';
+  // std::cout << hashZ << '\n';
 
   // for the entire grid
   // for (int z = 0; z < grid.z; z++) {
