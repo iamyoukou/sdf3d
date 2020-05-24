@@ -63,7 +63,11 @@ int main(int argc, char const *argv[]) {
   std::vector<glm::vec3> pointCloud;
 
   /* prepare mesh data */
-  Mesh mesh = loadObj("./mesh/sphere.obj");
+  // Mesh mesh = loadObj("./mesh/sphere.obj");
+  // Mesh mesh = loadObj("./mesh/monkey.obj");
+  Mesh mesh = loadObj("./mesh/torus.obj");
+  // Mesh mesh = loadObj("./mesh/bunny.obj");
+  // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
 
@@ -90,55 +94,38 @@ int main(int argc, char const *argv[]) {
   vec3 startCell = calCellPos(rangeMin);
   vec3 endCell = calCellPos(rangeMax);
 
-  // std::cout << "range: " << '\n';
-  // std::cout << to_string(rangeMin) << '\n';
-  // std::cout << to_string(rangeMax) << '\n';
-  //
-  // std::cout << "start cell: " << to_string(startCell) << '\n';
-  // std::cout << "end cell: " << to_string(endCell) << '\n';
-
   // for the selected range
-  // for (size_t z = startHash; z < endHashZ; z++) {
-  //   for (size_t y = startHash; y < endHashY; y++) {
-  //     for (size_t x = startHash; x < endHashX; x++) {
-  //     }
-  //   }
-  // }
-  //
-  // writePointCloud(pointCloud, "output.txt");
+  for (float z = startCell.z; z < endCell.z; z += cellSize) {
+    for (float y = startCell.y; y < endCell.y; y += cellSize) {
+      for (float x = startCell.x; x < endCell.x; x += cellSize) {
+        vec3 P(x, y, z); // cell position
+        float dist = 9999.f;
 
-  // for the entire grid
-  // for (int z = 0; z < grid.z; z++) {
-  //   for (int x = 0; x < grid.x; x++) {
-  //     for (int y = 0; y < grid.y; y++) {
-  //       glm::vec3 P = glm::vec3(x, y, z) * cellSize; // grid position
-  //       float dist = 9999.f;
-  //
-  //       // iterate vertices
-  //       for (size_t i = 0; i < mesh.faces.size(); i++) {
-  //         glm::ivec4 face = mesh.faces[i];
-  //
-  //         glm::vec3 A, B, C, N;
-  //         A = mesh.vertices[face[0]];
-  //         B = mesh.vertices[face[1]];
-  //         C = mesh.vertices[face[2]];
-  //         N = mesh.faceNormals[face[3]];
-  //
-  //         float temp = distPoint2Triangle(A, B, C, N, P);
-  //         dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-  //       } // end iterate vertices
-  //
-  //       // use sdf3d as a solid voxelier
-  //       // if dist < threshold, output grid position
-  //       float threshold = 0.f;
-  //       if (dist < threshold) {
-  //         pointCloud.push_back(P);
-  //       }
-  //     } // end iterate y
-  //   }   // end iterate x
-  // }
-  //
-  // writePointCloud(pointCloud, "output.txt");
+        // iterate triangles in the mesh
+        for (size_t i = 0; i < mesh.faces.size(); i++) {
+          Face face = mesh.faces[i];
+
+          glm::vec3 A, B, C, N;
+          A = mesh.vertices[face.v1];
+          B = mesh.vertices[face.v2];
+          C = mesh.vertices[face.v3];
+          N = mesh.faceNormals[face.vn1];
+
+          float temp = distPoint2Triangle(A, B, C, N, P);
+          dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
+        } // end iterate triangles
+
+        // use sdf3d as a solid voxelier
+        // if dist < threshold, output grid position
+        float threshold = 0.f;
+        if (dist < threshold) {
+          pointCloud.push_back(P);
+        }
+      } // end x direction
+    }   // end y direction
+  }     // end z direction
+
+  writePointCloud(pointCloud, "test.txt");
 
   /* glfw loop */
   // a rough way to solve cursor position initialization problem

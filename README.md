@@ -94,9 +94,16 @@ for the entire field:
     if(signedDistance < 0) voxelPosition = cellPosition;
 ```
 
-e.g. solid-voxelize a sphere using sdf3d
+The following is a result of solid-voxelizating a cube, a sphere and a torus.
 
-![spherePointCloud](./image/spherePointCloud.png)
+![spherePointCloud](./image/voxelization.png)
+
+### Error
+The solid voxelization of a monkey (from Blender) and the Stanford Bunny shows errors.
+
+![error](./image/error.png)
+
+I will fix this problem after I testing sdf3d with a simulating program.
 
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.
