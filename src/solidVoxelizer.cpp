@@ -6,6 +6,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include <fstream>
+#include <cmath>
 
 GLFWwindow *window;
 
@@ -27,6 +28,12 @@ vec3 eyeDirection =
          sin(verticalAngle) * sin(horizontalAngle));
 vec3 up = vec3(0.f, 1.f, 0.f);
 
+/* for voxelizer */
+ivec3 nOfCells(4, 4, 4);
+float cellSize = 0.15f;
+vec3 girdOrigin(0, 0, 0);
+float rangeOffset = 0.2f;
+
 /* opengl variables */
 GLuint exeShader;
 GLuint tboBase, tboNormal;
@@ -44,7 +51,8 @@ void initLight();
 void initShader();
 void releaseResource();
 
-void writePointCloud(std::vector<glm::vec3> &, const std::string);
+void writePointCloud(vector<vec3> &, const string);
+int calGridHash(vec3);
 
 int main(int argc, char const *argv[]) {
   initGL();
@@ -58,12 +66,23 @@ int main(int argc, char const *argv[]) {
   initMesh(mesh);
   findAABB(mesh);
 
-  // mesh.translate(glm::vec3(2, 2, 2));
-  // mesh.scale(glm::vec3(1, 1, 1));
+  mesh.translate(glm::vec3(2, 2, 2));
+  mesh.scale(glm::vec3(1, 1, 1));
 
-  // glm::ivec3 grid(20, 20, 20); // grid index
-  // int WND_WIDTH = grid.x, WND_HEIGHT = grid.y;
-  // float cellSize = 0.15f;
+  /* find a searching range */
+  // select an area a little bigger than mesh's aabb
+  vec3 rangeMin = mesh.min - rangeOffset;
+  vec3 rangeMax = mesh.max + rangeOffset;
+
+  // find the range of the selected area in x, y, z direction
+  vec3 rangeX = vec3(rangeMax.x, rangeMin.y, rangeMin.z);
+  vec3 rangeY = vec3(rangeMin.x, rangeMax.y, rangeMin.z);
+  vec3 rangeZ = vec3(rangeMin.x, rangeMin.y, rangeMax.z);
+
+  // find the corresponding grid index (or hash) of those ranges
+  int hashX = calGridHash(rangeX);
+  int hashY = calGridHash(rangeY);
+  int hashZ = calGridHash(rangeZ);
 
   // for the entire grid
   // for (int z = 0; z < grid.z; z++) {
@@ -121,6 +140,7 @@ int main(int argc, char const *argv[]) {
     glBindVertexArray(mesh.vao);
     glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
     drawBox(mesh.min, mesh.max);
+    drawBox(rangeMin, rangeMax);
 
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
@@ -298,4 +318,12 @@ void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
 
   // For the next frame, the "last time" will be "now"
   lastTime = currentTime;
+}
+
+int calGridHash(vec3 pt) {
+  int hx = int(floor(pt.x / cellSize));
+  int hy = int(floor(pt.y / cellSize) * nOfCells.x);
+  int hz = int(floor(pt.z / cellSize) * nOfCells.x * nOfCells.y);
+
+  return (hx + hy + hz);
 }
