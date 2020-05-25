@@ -94,7 +94,7 @@ for the entire field:
     if(signedDistance < 0) voxelPosition = cellPosition;
 ```
 
-The following is a result of solid-voxelizating a cube, a sphere and a torus.
+The following is a result of solid-voxelizing a cube, a sphere and a torus.
 
 ![spherePointCloud](./image/voxelization.png)
 

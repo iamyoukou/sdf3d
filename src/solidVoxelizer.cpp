@@ -30,16 +30,14 @@ vec3 up = vec3(0.f, 1.f, 0.f);
 
 /* for voxelizer */
 ivec3 nOfCells;
-float cellSize = 0.1f;
+float cellSize = 0.25f;
 vec3 gridOrigin(0, 0, 0);
-vec3 rangeOffset(0.2f, 0.2f, 0.2f);
+vec3 rangeOffset(0.5f, 0.5f, 0.5f);
 
 /* opengl variables */
 GLuint exeShader;
-GLuint tboBase, tboNormal;
-GLint uniM, uniV, uniP, uniMvp;
+GLint uniM, uniV, uniP;
 GLint uniLightColor, uniLightPosition, uniLightPower;
-GLint uniTexBase;
 GLint uniEyePoint;
 
 void computeMatricesFromInputs(mat4 &, mat4 &);
@@ -64,8 +62,8 @@ int main(int argc, char const *argv[]) {
 
   /* prepare mesh data */
   // Mesh mesh = loadObj("./mesh/sphere.obj");
-  // Mesh mesh = loadObj("./mesh/monkey.obj");
-  Mesh mesh = loadObj("./mesh/torus.obj");
+  Mesh mesh = loadObj("./mesh/monkey.obj");
+  // Mesh mesh = loadObj("./mesh/torus.obj");
   // Mesh mesh = loadObj("./mesh/bunny.obj");
   // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
