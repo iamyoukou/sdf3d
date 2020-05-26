@@ -83,6 +83,7 @@ float sign = dot(normalize(temp), N);
 ```
 
 # Special case
+This case is essentially equal to the "changing signs" cases pointed out by [Fuhrmann, 2003].
 
 ![specialCase](./image/specialCase.png)
 
@@ -119,6 +120,17 @@ for the entire field:
 The solid voxelization of the Stanford Bunny still shows errors.
 
 ![error](./image/error.png)
+
+# Limitation
+Based on experiments and observations, using `dot(AP, N)` to decide whether a point is inside or outside a mesh shows limitations ([Fuhrmann, 2003] points out the similar thing).
+
+From my experience, if there are "sharp" parts in a mesh, some points around those sharp areas are decided to be inside the mesh.
+For example, the area around ears of the bunny.
+
+Although selectively choosing thresholds (or tolerance value in [Fuhrmann, 2003]) can somewhat reduce errors, its effect is limited.
+
+Currently, this method is sufficient for me.
+But I will keep an eye on finding an alternative one.
 
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.
