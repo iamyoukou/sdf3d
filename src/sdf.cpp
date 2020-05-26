@@ -216,7 +216,15 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
   //   sign = temp;
   //   sign /= glm::abs(sign);
   // }
+
+  // general case
   float sign = (temp == 0) ? 1.f : (temp / glm::abs(temp));
+
+  // special case
+  float epsilon = 0.01f;
+  if (abs(temp) < epsilon) {
+    sign = 1.f;
+  }
 
   // std::cout << "sign = " << sign << '\n';
 

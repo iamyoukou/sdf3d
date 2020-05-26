@@ -30,9 +30,9 @@ vec3 up = vec3(0.f, 1.f, 0.f);
 
 /* for voxelizer */
 ivec3 nOfCells;
-float cellSize = 0.1f;
+float cellSize = 0.25f;
 vec3 gridOrigin(0, 0, 0);
-vec3 rangeOffset(0.2f, 0.2f, 0.2f);
+vec3 rangeOffset(0.5f, 0.5f, 0.5f);
 
 /* opengl variables */
 GLuint exeShader;
@@ -94,7 +94,7 @@ int main(int argc, char const *argv[]) {
 
   /* test */
   // iterate triangles in the mesh
-  // vec3 P(0.000000, 0.000000, 0.750000);
+  // vec3 P(0.000000, 4.500000, 1.500000);
   // float dist = 9999.f;
   //
   // std::vector<Point> pts;
@@ -103,12 +103,17 @@ int main(int argc, char const *argv[]) {
   // pts.push_back(pt);
   //
   // Triangle tri;
-  // tri.v1 = vec3(0.585938, 1.539063, 0.921874);
-  // tri.v2 = vec3(0.500000, 1.781250, 0.851562);
-  // tri.v3 = vec3(0.554688, 1.539063, 0.820312);
+  // tri.v1 = vec3(0.896600, 3.841775, 1.119675);
+  // tri.v2 = vec3(0.889975, 3.806825, 1.269400);
+  // tri.v3 = vec3(0.885750, 3.876475, 1.169100);
+  //
+  // Triangle tri2;
+  // tri2.v1 = vec3(0.923175, 3.993775, 1.054900);
+  // tri2.v2 = vec3(0.882925, 3.945550, 0.993650);
+  // tri2.v3 = vec3(0.885750, 3.876475, 1.169100);
   //
   // vec3 start = P;
-  // vec3 end = vec3(0.554688, 1.539063, 0.820312);
+  // vec3 end = vec3(0.889975, 3.806825, 1.269400);
   //
   // for (size_t i = 0; i < mesh.faces.size(); i++) {
   //   Face face = mesh.faces[i];
@@ -223,15 +228,12 @@ int main(int argc, char const *argv[]) {
     // draw mesh
     glBindVertexArray(mesh.vao);
     glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
-    // drawBox(mesh.min, mesh.max);
-    // drawBox(rangeMin, rangeMax);
-    // drawBox(vec3(0.5, 1.5, 0), vec3(0.55, 1.55, 0.05));
-    // drawBox(vec3(0, 0, 0), vec3(0.1, 0.1, 0.1));
     // drawPoints(pts);
     // drawLine(start, end);
-    //
+
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     // drawTriangle(tri);
+    // drawTriangle(tri2);
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     /* Swap front and back buffers */
