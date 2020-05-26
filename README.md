@@ -2,7 +2,7 @@
 [Fuhrmann,2003] introduces an efficient method to calculate the SDF of 3D objects.
 
 In their paper, they state that the distance from a point to a triangle can be calculated using Voronoi regions, but they do not provide any details.
-After a lot of searching, I found [this article](http://box2d.org/files/GDC2010/GDC2010_Catto_Erin_GJK.pdf) written by [Erin Catto](https://box2d.org/author/ecatto/) which explains exactly how to calculate that distance using Voronoi regions.
+After a lot of searching, I found [this article](http://twvideo01.ubm-us.net/o1/vault/gdc10/slides/Catto_Erin_PhysicsForProgrammers_ComputingDistance.pdf) written by [Erin Catto](https://github.com/erincatto) which explains exactly how to calculate that distance using Voronoi regions.
 
 # Find the distance from a point to a triangle
 ![projection](./image/projection.png)

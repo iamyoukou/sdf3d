@@ -18,6 +18,34 @@
 using namespace std;
 using namespace glm;
 
+/* Define a 3D triangle */
+typedef struct {
+  vec3 v1, v2, v3;
+} Triangle;
+
+/* Define a 3D point */
+typedef struct {
+  vec3 pos;
+  vec3 color;
+  vec3 v;
+  float m;
+} Point;
+
+/* Define a particle system */
+class Particles {
+public:
+  std::vector<Point> Ps;
+  GLuint vao, vboPos, vboColor;
+
+  /* Constructors */
+  Particles() {}
+  ~Particles() {
+    glDeleteBuffers(1, &vboPos);
+    glDeleteBuffers(1, &vboColor);
+    glDeleteBuffers(1, &vao);
+  }
+};
+
 typedef struct {
   // data index
   GLuint v1, v2, v3;
@@ -66,3 +94,6 @@ void keyCallback(GLFWwindow *, int, int, int, int);
 void findAABB(Mesh &);
 void drawBox(glm::vec3, glm::vec3);
 void updateMesh(Mesh &);
+void drawTriangle(Triangle &);
+void drawLine(vec3, vec3);
+void drawPoints(std::vector<Point> &);

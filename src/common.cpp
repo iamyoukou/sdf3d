@@ -312,7 +312,7 @@ void findAABB(Mesh &mesh) {
 
 void drawBox(glm::vec3 min, glm::vec3 max) {
   // 8 corners
-  GLfloat aVtxs[]{
+  GLfloat aVtxs[] = {
       min.x, max.y, min.z, // 0
       min.x, min.y, min.z, // 1
       max.x, min.y, min.z, // 2
@@ -560,4 +560,104 @@ void updateMesh(Mesh &mesh) {
   delete[] aVtxCoords;
   // delete[] aUvs;
   // delete[] aNormals;
+}
+
+void drawPoints(std::vector<Point> &pts) { // array data
+  int nOfPs = pts.size();
+  GLfloat *aPos = new GLfloat[nOfPs * 3];
+  // GLfloat *aColor = new GLfloat[nOfPs * 3];
+
+  // implant data
+  for (size_t i = 0; i < nOfPs; i++) {
+    // positions
+    Point &p = pts[i];
+    aPos[i * 3 + 0] = p.pos.x;
+    aPos[i * 3 + 1] = p.pos.y;
+    aPos[i * 3 + 2] = p.pos.z;
+
+    // colors
+    // aColor[i * 3 + 0] = p.color.r;
+    // aColor[i * 3 + 1] = p.color.g;
+    // aColor[i * 3 + 2] = p.color.b;
+  }
+
+  // selete vao
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // position
+  GLuint vboPos;
+  glGenBuffers(1, &vboPos);
+  glBindBuffer(GL_ARRAY_BUFFER, vboPos);
+  glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), aPos,
+               GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  // color
+  // glBindBuffer(GL_ARRAY_BUFFER, ps.vboColor);
+  // // buffer orphaning
+  // glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), NULL,
+  //              GL_STREAM_DRAW);
+  // for (size_t i = 0; i < nOfPs; i++) {
+  //   glBufferSubData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * i,
+  //                   sizeof(GLfloat) * 3, &aColor[i * 3]);
+  // }
+
+  glDrawArrays(GL_POINTS, 0, nOfPs);
+
+  // release
+  delete[] aPos;
+  // delete[] aColor;
+  glDeleteBuffers(1, &vboPos);
+  glDeleteVertexArrays(1, &vao);
+}
+
+void drawLine(vec3 start, vec3 end) {
+  GLfloat aPos[] = {start.x, start.y, start.z, end.x, end.y, end.z};
+
+  // selete vao
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // position
+  GLuint vboPos;
+  glGenBuffers(1, &vboPos);
+  glBindBuffer(GL_ARRAY_BUFFER, vboPos);
+  glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(GLfloat), aPos, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  glDrawArrays(GL_LINES, 0, 2);
+
+  glDeleteBuffers(1, &vboPos);
+  glDeleteVertexArrays(1, &vao);
+}
+
+void drawTriangle(Triangle &tri) {
+  GLfloat aPos[] = {
+      tri.v1.x, tri.v1.y, tri.v1.z, // 0
+      tri.v2.x, tri.v2.y, tri.v2.z, // 1
+      tri.v3.x, tri.v3.y, tri.v3.z  // 2
+  };
+
+  // selete vao
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // position
+  GLuint vboPos;
+  glGenBuffers(1, &vboPos);
+  glBindBuffer(GL_ARRAY_BUFFER, vboPos);
+  glBufferData(GL_ARRAY_BUFFER, 3 * 3 * sizeof(GLfloat), aPos, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  glDrawArrays(GL_TRIANGLES, 0, 9);
+
+  glDeleteBuffers(1, &vboPos);
+  glDeleteVertexArrays(1, &vao);
 }
