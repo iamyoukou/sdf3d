@@ -30,9 +30,9 @@ vec3 up = vec3(0.f, 1.f, 0.f);
 
 /* for voxelizer */
 ivec3 nOfCells;
-float cellSize = 0.25f;
+float cellSize = 0.1f;
 vec3 gridOrigin(0, 0, 0);
-vec3 rangeOffset(0.5f, 0.5f, 0.5f);
+vec3 rangeOffset(0.2f, 0.2f, 0.2f);
 
 /* opengl variables */
 GLuint exeShader;
@@ -62,9 +62,9 @@ int main(int argc, char const *argv[]) {
 
   /* prepare mesh data */
   // Mesh mesh = loadObj("./mesh/sphere.obj");
-  // Mesh mesh = loadObj("./mesh/monkey.obj");
+  Mesh mesh = loadObj("./mesh/monkey.obj");
   // Mesh mesh = loadObj("./mesh/torus.obj");
-  Mesh mesh = loadObj("./mesh/bunny.obj");
+  // Mesh mesh = loadObj("./mesh/bunny.obj");
   // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
@@ -94,7 +94,7 @@ int main(int argc, char const *argv[]) {
 
   /* test */
   // iterate triangles in the mesh
-  // vec3 P(0.500000, 1.500000, 0.000000);
+  // vec3 P(0.000000, 0.000000, 0.750000);
   // float dist = 9999.f;
   //
   // std::vector<Point> pts;
@@ -120,10 +120,21 @@ int main(int argc, char const *argv[]) {
   //   N = mesh.faceNormals[face.vn1];
   //
   //   float temp = distPoint2Triangle(A, B, C, N, P);
+  //   float oldDist = dist;
+  //
+  //   // for general case
   //   dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
   //
-  //   if (abs(temp) == abs(dist)) {
-  //     dist = (temp > 0) ? temp : dist;
+  //   // for a special case
+  //   float delta = abs(abs(temp) - abs(oldDist));
+  //   // if delta is less than some threshold
+  //   // we decide that temp is equal to dist
+  //   if (delta < 0.0001f) {
+  //     std::cout << "delta = " << delta << '\n';
+  //
+  //     // if dist will change its sign
+  //     // we keep dist at the positive one
+  //     dist = (temp > 0) ? temp : oldDist;
   //   }
   //
   //   std::cout << "face " << i << ": " << '\n';
@@ -156,11 +167,21 @@ int main(int argc, char const *argv[]) {
           N = mesh.faceNormals[face.vn1];
 
           float temp = distPoint2Triangle(A, B, C, N, P);
+          float oldDist = dist;
+
+          // for general case
           dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
 
-          // fix error
-          if (abs(temp) == abs(dist)) {
-            dist = (temp > 0) ? temp : dist;
+          // for a special case
+          float delta = abs(abs(temp) - abs(oldDist));
+          // if delta is less than some threshold
+          // we decide that temp is equal to dist
+          if (delta < 0.0001f) {
+            // std::cout << "delta = " << delta << '\n';
+
+            // if dist will change its sign
+            // we keep dist at the positive one
+            dist = (temp > 0) ? temp : oldDist;
           }
 
         } // end iterate triangles
