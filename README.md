@@ -82,6 +82,25 @@ Otherwise, `sign = -1`, i.e.
 float sign = dot(normalize(temp), N);
 ```
 
+# Special case
+
+![specialCase](./image/specialCase.png)
+
+Assume that there are two adjacent triangles `A` and `B`, and point `Q` is one of their shared vertices.
+`P` is a point outside the triangle, and the distance from `P` to `A` and `B` are both `PQ`.
+`P` is forward to `B`, but is backward to `A`.
+So the corresponding signed distance are `|PQ|` and `-|PQ|`, respectively.
+
+In this case, `P` is obviously outside the mesh.
+However, if we simply use `abs(newDist) < abs(oldDist)` to decide the new distance,
+errors happen.
+That is, if `B` is previously iterated than `A`,
+then the signed distance will always be `-|PQ|`,
+i.e. `P` will be decided as inside the mesh.
+
+To solve this problem, we assume that if `abs(newDist) == abs(oldDist)`, but their signs are different, we keep the positive one as the new distance.
+This correctly decides `P` as outside the mesh.
+
 # Result
 ## Test sdf3d with a simple simulating program
 
@@ -94,16 +113,12 @@ for the entire field:
     if(signedDistance < 0) voxelPosition = cellPosition;
 ```
 
-The following is a result of solid-voxelizing a cube, a sphere and a torus.
-
 ![spherePointCloud](./image/voxelization.png)
 
 ### Error
-The solid voxelization of a monkey (from Blender) and the Stanford Bunny shows errors.
+The solid voxelization of the Stanford Bunny still shows errors.
 
 ![error](./image/error.png)
-
-I will fix this problem after I testing sdf3d with a simulating program.
 
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.

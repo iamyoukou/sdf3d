@@ -62,9 +62,9 @@ int main(int argc, char const *argv[]) {
 
   /* prepare mesh data */
   // Mesh mesh = loadObj("./mesh/sphere.obj");
-  Mesh mesh = loadObj("./mesh/monkey.obj");
+  // Mesh mesh = loadObj("./mesh/monkey.obj");
   // Mesh mesh = loadObj("./mesh/torus.obj");
-  // Mesh mesh = loadObj("./mesh/bunny.obj");
+  Mesh mesh = loadObj("./mesh/bunny.obj");
   // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
