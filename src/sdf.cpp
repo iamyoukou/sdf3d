@@ -133,13 +133,13 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
 
   // barycentric coordinate of P'
   glm::vec3 Pbary = baryCoord(a, b, c, n, Pproj);
-  std::cout << "P' bary = " << glm::to_string(Pbary) << '\n';
+  // std::cout << "P' bary = " << glm::to_string(Pbary) << '\n';
 
   // P' is inside ABC
   // including: P' is on the edge or vertex
   if ((Pbary.x >= 0 && Pbary.x <= 1.f) && (Pbary.y >= 0 && Pbary.y <= 1.f) &&
       (Pbary.z >= 0 && Pbary.z <= 1.f)) {
-    std::cout << "P' is inside triangle" << '\n';
+    // std::cout << "P' is inside triangle" << '\n';
     glm::vec3 n = glm::normalize(glm::cross(b - a, c - a));
 
     // For convenience, I multiply the sign later in the return statement
@@ -148,7 +148,7 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
   // When P' is outside ABC,
   // find the closest edge or vertex
   else {
-    std::cout << "P' is outside triangle" << '\n';
+    // std::cout << "P' is outside triangle" << '\n';
 
     // Calculate 6 line uv parameters
     glm::vec2 uvAb, uvBc, uvCa;
@@ -166,18 +166,18 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
 
     // first: vertex regions
     if (uvAb[1] <= 0 && uvCa[0] <= 0) {
-      std::cout << "region A" << '\n';
+      // std::cout << "region A" << '\n';
       dist = glm::length(p - a);
     } else if (uvAb[0] <= 0 && uvBc[1] <= 0) {
-      std::cout << "region B" << '\n';
+      // std::cout << "region B" << '\n';
       dist = glm::length(p - b);
     } else if (uvBc[0] <= 0 && uvCa[1] <= 0) {
-      std::cout << "region C" << '\n';
+      // std::cout << "region C" << '\n';
       dist = glm::length(p - c);
     }
     // Second: edge regions
     else if (uvAb[0] > 0 && uvAb[1] > 0 && uvwAbc[2] <= 0) {
-      std::cout << "region AB" << '\n';
+      // std::cout << "region AB" << '\n';
       glm::vec3 dirAb = glm::normalize(b - a);
       glm::vec3 APproj = Pproj - a;
       float frac = glm::dot(APproj, dirAb);
@@ -185,7 +185,7 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
       // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = glm::length(p - Pinter);
     } else if (uvBc[0] > 0 && uvBc[1] > 0 && uvwAbc[0] <= 0) {
-      std::cout << "region BC" << '\n';
+      // std::cout << "region BC" << '\n';
       glm::vec3 dirBc = glm::normalize(c - b);
       glm::vec3 BPproj = Pproj - b;
       float frac = glm::dot(BPproj, dirBc);
@@ -193,7 +193,7 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
       // std::cout << "Pinter = " << glm::to_string(Pinter) << '\n';
       dist = glm::length(p - Pinter);
     } else if (uvCa[0] > 0 && uvCa[1] > 0 && uvwAbc[1] <= 0) {
-      std::cout << "region CA" << '\n';
+      // std::cout << "region CA" << '\n';
       glm::vec3 dirCa = glm::normalize(a - c);
       glm::vec3 CPproj = Pproj - c;
       float frac = glm::dot(CPproj, dirCa);

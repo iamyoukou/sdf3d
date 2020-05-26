@@ -62,9 +62,9 @@ int main(int argc, char const *argv[]) {
 
   /* prepare mesh data */
   // Mesh mesh = loadObj("./mesh/sphere.obj");
-  Mesh mesh = loadObj("./mesh/monkey.obj");
+  // Mesh mesh = loadObj("./mesh/monkey.obj");
   // Mesh mesh = loadObj("./mesh/torus.obj");
-  // Mesh mesh = loadObj("./mesh/bunny.obj");
+  Mesh mesh = loadObj("./mesh/bunny.obj");
   // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
@@ -93,19 +93,23 @@ int main(int argc, char const *argv[]) {
   vec3 endCell = calCellPos(rangeMax);
 
   /* test */
-  std::vector<Point> pts;
-
-  Point p1;
-  p1.pos = vec3(0.5, 1.5, 0);
-  pts.push_back(p1);
-
-  Triangle tri;
-  tri.v1 = vec3(0, 0, 0);
-  tri.v2 = vec3(1, 1, 1);
-  tri.v3 = vec3(0.5, 1, 0.2);
   // iterate triangles in the mesh
   // vec3 P(0.500000, 1.500000, 0.000000);
   // float dist = 9999.f;
+  //
+  // std::vector<Point> pts;
+  // Point pt;
+  // pt.pos = P;
+  // pts.push_back(pt);
+  //
+  // Triangle tri;
+  // tri.v1 = vec3(0.585938, 1.539063, 0.921874);
+  // tri.v2 = vec3(0.500000, 1.781250, 0.851562);
+  // tri.v3 = vec3(0.554688, 1.539063, 0.820312);
+  //
+  // vec3 start = P;
+  // vec3 end = vec3(0.554688, 1.539063, 0.820312);
+  //
   // for (size_t i = 0; i < mesh.faces.size(); i++) {
   //   Face face = mesh.faces[i];
   //
@@ -117,6 +121,10 @@ int main(int argc, char const *argv[]) {
   //
   //   float temp = distPoint2Triangle(A, B, C, N, P);
   //   dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
+  //
+  //   if (abs(temp) == abs(dist)) {
+  //     dist = (temp > 0) ? temp : dist;
+  //   }
   //
   //   std::cout << "face " << i << ": " << '\n';
   //   std::cout << "P: " << to_string(P) << '\n';
@@ -131,40 +139,46 @@ int main(int argc, char const *argv[]) {
   /* end of test */
 
   // for the selected range
-  // for (float z = startCell.z; z < endCell.z; z += cellSize) {
-  //   for (float y = startCell.y; y < endCell.y; y += cellSize) {
-  //     for (float x = startCell.x; x < endCell.x; x += cellSize) {
-  //       vec3 P(x, y, z); // cell position
-  //       float dist = 9999.f;
-  //
-  //       // iterate triangles in the mesh
-  //       for (size_t i = 0; i < mesh.faces.size(); i++) {
-  //         Face face = mesh.faces[i];
-  //
-  //         glm::vec3 A, B, C, N;
-  //         A = mesh.vertices[face.v1];
-  //         B = mesh.vertices[face.v2];
-  //         C = mesh.vertices[face.v3];
-  //         N = mesh.faceNormals[face.vn1];
-  //
-  //         float temp = distPoint2Triangle(A, B, C, N, P);
-  //         dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-  //       } // end iterate triangles
-  //
-  //       // use sdf3d as a solid voxelier
-  //       // if dist < threshold, output grid position
-  //       float threshold = 0.f;
-  //       if (dist < threshold) {
-  //         pointCloud.push_back(P);
-  //
-  //         // test
-  //         std::cout << "Point " << to_string(P) << ": " << dist << '\n';
-  //       }
-  //     } // end x direction
-  //   }   // end y direction
-  // }     // end z direction
+  for (float z = startCell.z; z < endCell.z; z += cellSize) {
+    for (float y = startCell.y; y < endCell.y; y += cellSize) {
+      for (float x = startCell.x; x < endCell.x; x += cellSize) {
+        vec3 P(x, y, z); // cell position
+        float dist = 9999.f;
 
-  // writePointCloud(pointCloud, "test.txt");
+        // iterate triangles in the mesh
+        for (size_t i = 0; i < mesh.faces.size(); i++) {
+          Face face = mesh.faces[i];
+
+          glm::vec3 A, B, C, N;
+          A = mesh.vertices[face.v1];
+          B = mesh.vertices[face.v2];
+          C = mesh.vertices[face.v3];
+          N = mesh.faceNormals[face.vn1];
+
+          float temp = distPoint2Triangle(A, B, C, N, P);
+          dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
+
+          // fix error
+          if (abs(temp) == abs(dist)) {
+            dist = (temp > 0) ? temp : dist;
+          }
+
+        } // end iterate triangles
+
+        // use sdf3d as a solid voxelier
+        // if dist < threshold, output grid position
+        float threshold = 0.f;
+        if (dist < threshold) {
+          pointCloud.push_back(P);
+
+          // test
+          // std::cout << "Point " << to_string(P) << ": " << dist << '\n';
+        }
+      } // end x direction
+    }   // end y direction
+  }     // end z direction
+
+  writePointCloud(pointCloud, "test.txt");
 
   /* glfw loop */
   // a rough way to solve cursor position initialization problem
@@ -186,15 +200,18 @@ int main(int argc, char const *argv[]) {
     glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
     // draw mesh
-    // glBindVertexArray(mesh.vao);
-    // glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
+    glBindVertexArray(mesh.vao);
+    glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
     // drawBox(mesh.min, mesh.max);
     // drawBox(rangeMin, rangeMax);
     // drawBox(vec3(0.5, 1.5, 0), vec3(0.55, 1.55, 0.05));
     // drawBox(vec3(0, 0, 0), vec3(0.1, 0.1, 0.1));
-    drawPoints(pts);
-    drawLine(vec3(0, 0, 0), vec3(1, 1, 1));
-    drawTriangle(tri);
+    // drawPoints(pts);
+    // drawLine(start, end);
+    //
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    // drawTriangle(tri);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
@@ -271,7 +288,7 @@ void initGL() { // Initialise GLFW
 
   glPointSize(10);
   glLineWidth(2.0f);
-  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void initMatrix() {
