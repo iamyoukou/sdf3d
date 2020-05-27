@@ -6,132 +6,338 @@
 #include <opencv2/imgproc.hpp>
 
 #include <fstream>
+#include <cmath>
+
+GLFWwindow *window;
+
+vec3 lightPosition = vec3(3.f, 3.f, 3.f);
+vec3 lightColor = vec3(1.f, 1.f, 1.f);
+float lightPower = 1.f;
+
+/* for view control */
+float verticalAngle = -2.76603;
+float horizontalAngle = 1.56834;
+float initialFoV = 45.0f;
+float speed = 5.0f;
+float mouseSpeed = 0.005f;
+
+mat4 model, view, projection;
+vec3 eyePoint = vec3(0.106493, 3.517007, 1.688342);
+vec3 eyeDirection =
+    vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
+         sin(verticalAngle) * sin(horizontalAngle));
+vec3 up = vec3(0.f, 1.f, 0.f);
+
+/* for voxelizer */
+ivec3 nOfCells;
+float cellSize = 0.25f;
+vec3 gridOrigin(0, 0, 0);
+vec3 rangeOffset(0.5f, 0.5f, 0.5f);
+
+/* opengl variables */
+GLuint exeShader;
+GLint uniM, uniV, uniP;
+GLint uniLightColor, uniLightPosition, uniLightPower;
+GLint uniEyePoint;
+
+void computeMatricesFromInputs(mat4 &, mat4 &);
+void keyCallback(GLFWwindow *, int, int, int, int);
+
+void initGL();
+void initMatrix();
+void initLight();
+void initShader();
+void releaseResource();
+
+void writePointCloud(vector<vec3> &, const string);
+vec3 calCellPos(vec3);
 
 int main(int argc, char const *argv[]) {
-  // glm::vec3 A(1, -0.86, -0.5), B(-1, 0.86, 0.5), C(-1, -0.86, -0.5);
-  // glm::vec3 P1(0, -1.615, 1.327);
-  // glm::vec3 P2(0.481, 0.344, 0.717);
-  // glm::vec3 P3(-1.372, 1.374, 0.84);
-  //
-  // glm::vec3 N1 = glm::normalize(glm::cross(B - A, P1 - A));
-  // float dist1 = distPoint2Triangle(A, B, C, N1, P1);
-  // std::cout << "P1 dist = " << dist1 << '\n';
-  // std::cout << '\n';
+  initGL();
+  initShader();
+  initMatrix();
+  initLight();
 
-  // float dist2 = distPoint2Triangle(A, B, C, P2);
-  // std::cout << "P2 dist = " << dist2 << '\n';
-  // std::cout << '\n';
-  //
-  // float dist3 = distPoint2Triangle(A, B, C, P3);
-  // std::cout << "P3 dist = " << dist3 << '\n';
-  // std::cout << '\n';
-  //
-  // std::cout << "dist = "
-  //           << distPoint2Triangle(vec3(1, 2, 0), vec3(5, 3, 0), vec3(2, 4,
-  //           0),
-  //                                 vec3(1, 2.5, 10))
-  //           << '\n';
+  /* prepare mesh data */
+  Mesh mesh = loadObj("./mesh/sphere.obj");
+  // Mesh mesh = loadObj("./mesh/monkey.obj");
+  // Mesh mesh = loadObj("./mesh/torus.obj");
+  // Mesh mesh = loadObj("./mesh/bunny.obj");
+  // Mesh mesh = loadObj("./mesh/cube.obj");
+  initMesh(mesh);
+  findAABB(mesh);
 
-  // Mesh mesh = loadObj("./model/cube.obj");
-  // Mesh mesh = loadObj("./model/cube30d.obj");
-  // Mesh mesh = loadObj("./model/monkey.obj");
-  Mesh mesh = loadObj("./model/sphere.obj");
-  mesh.translate(glm::vec3(2, 2, 2));
-  mesh.scale(glm::vec3(1, 1, 1));
+  // transform mesh to (origin + offset) position
+  vec3 offset = (gridOrigin - mesh.min) + rangeOffset;
+  mesh.translate(offset);
+  updateMesh(mesh);
 
-  // glm::vec3 P(0.8, 0.5, 1.5);
-  // glm::vec3 Prot(0.8, -0.317, 1.55);
-  // float dist = 9999.f;
+  /* grid parameters */
+  // The grid covers the area of mesh
+  // Between the grid and the mesh,
+  // there is a offset area which is defined by rangeOffset
+  vec3 gridSize = (mesh.max + rangeOffset * 2.0f) - gridOrigin;
+  nOfCells = ivec3(gridSize / cellSize);
 
-  // iterate each triangle
-  // for (size_t i = 0; i < mesh.faces.size(); i++) {
-  //   glm::ivec4 face = mesh.faces[i];
-  //
-  //   glm::vec3 A, B, C, N;
-  //   A = mesh.vertices[face[0]];
-  //   B = mesh.vertices[face[1]];
-  //   C = mesh.vertices[face[2]];
-  //   N = mesh.faceNormals[face[3]];
-  //
-  //   float temp = distPoint2Triangle(A, B, C, N, P);
-  //   float temp = distPoint2Triangle(A, B, C, N, Prot);
-  //   dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-  //   std::cout << "triangle " << (i + 1) << ", temp = " << temp << '\n';
-  //   std::cout << '\n';
-  // }
-  // std::cout << "dist = " << dist << '\n';
+  /* find a searching range */
+  // select an area a little bigger than mesh's aabb
+  vec3 rangeMin = mesh.min - rangeOffset;
+  vec3 rangeMax = mesh.max + rangeOffset;
 
-  // glm::ivec3 grid(20, 20, 20); // grid index
-  // int WND_WIDTH = grid.x, WND_HEIGHT = grid.y;
-  // float cellSize = 0.15f;
-  // // float sdfScale = 15.f;
-  //
-  // for (int z = 0; z < grid.z; z++) {
-  //
-  //   // temporarily hold sdf of (x, y, ...)
-  //   // float xySdf[10][10] = {};
-  //
-  //   for (int x = 0; x < grid.x; x++) {
-  //     for (int y = 0; y < grid.y; y++) {
-  //       glm::vec3 P = glm::vec3(x, y, z) * cellSize; // grid position
-  //       // std::cout << "P = " << glm::to_string(P) << '\n';
+  // find cells which cover those area
+  vec3 startCell = calCellPos(rangeMin);
+  vec3 endCell = calCellPos(rangeMax);
+
+  // for the selected range
+  // for (float z = startCell.z; z < endCell.z; z += cellSize) {
+  //   for (float y = startCell.y; y < endCell.y; y += cellSize) {
+  //     for (float x = startCell.x; x < endCell.x; x += cellSize) {
+  //       vec3 P(x, y, z); // cell position
   //       float dist = 9999.f;
   //
-  //       // iterate vertices
+  //       // iterate triangles in the mesh
   //       for (size_t i = 0; i < mesh.faces.size(); i++) {
-  //         glm::ivec4 face = mesh.faces[i];
+  //         Face face = mesh.faces[i];
   //
   //         glm::vec3 A, B, C, N;
-  //         A = mesh.vertices[face[0]];
-  //         B = mesh.vertices[face[1]];
-  //         C = mesh.vertices[face[2]];
-  //         N = mesh.faceNormals[face[3]];
-  //
-  //         // std::cout << "A = " << glm::to_string(A) << '\n';
-  //         // std::cout << "B = " << glm::to_string(B) << '\n';
-  //         // std::cout << "C = " << glm::to_string(C) << '\n';
-  //         // std::cout << "N = " << glm::to_string(N) << '\n';
+  //         A = mesh.vertices[face.v1];
+  //         B = mesh.vertices[face.v2];
+  //         C = mesh.vertices[face.v3];
+  //         N = mesh.faceNormals[face.vn1];
   //
   //         float temp = distPoint2Triangle(A, B, C, N, P);
+  //         float oldDist = dist;
+  //
+  //         // for general case
   //         dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-  //         // xySdf[x][y] = dist;
-  //         // std::cout << "dist = " << dist << '\n';
-  //         // std::cout << "temp = " << temp << '\n';
   //
-  //       } // end iterate vertices
+  //         // for a special case
+  //         float delta = abs(abs(temp) - abs(oldDist));
+  //         // if delta is less than some threshold
+  //         // we decide that temp is equal to dist
+  //         if (delta < 0.0001f) {
   //
-  //       // std::cout << xySdf[x][y] << '\n';
-  //       // std::cout << '\n';
+  //           // if dist will change its sign
+  //           // we keep dist at the positive one
+  //           dist = (temp > 0) ? temp : oldDist;
+  //         }
   //
-  //       // std::cout << glm::to_string(P) << " dist = " << dist << '\n';
-  //     } // end iterate y
-  //   }   // end iterate x
+  //       } // end iterate triangles
+  //
+  //       // use sdf3d as a solid voxelier
+  //       // if dist < threshold, output grid position
+  //       float threshold = 0.f;
+  //       if (dist < threshold) {
+  //         pointCloud.push_back(P);
+  //       }
+  //     } // end x direction
+  //   }   // end y direction
+  // }     // end z direction
 
-  // to image
-  // cv::Mat canvas =
-  //     cv::Mat(WND_HEIGHT, WND_WIDTH, CV_8UC3, cv::Scalar(255, 255, 255));
-  //
-  // for (int x = 0; x < grid.x; x++) {
-  //   for (int y = 0; y < grid.y; y++) {
-  //
-  //     float dist = ((xySdf[x][y] / sdfScale) + 1.f) * 0.5f; // to
-  //     [ 0.0, 1.0 ] int iDist = int(glm::clamp(dist * 255.f, 0.f, 255.f));
-  //     // to[0, 255]
-  //         // std::cout << "(" << x << "," << y << "," << z << "): "
-  //         //           << "iDist = " << iDist << '\n';
-  //
-  //         // to window space
-  //         // int ix = grid.x;
-  //         // int iy = grid.y;
-  //
-  //         cv::Vec3b &pixel = canvas.at<cv::Vec3b>(cv::Point(x, y));
-  //     pixel = cv::Vec3b(iDist, iDist, iDist);
-  //   }
-  // }
-  // imwrite(cv::format("./result/sim%03d.png", int(z)), canvas);
-  // canvas.release();
-  // std::cout << "level " << z << " completed." << '\n';
-  // }
+  /* glfw loop */
+  // a rough way to solve cursor position initialization problem
+  // must call glfwPollEvents once to activate glfwSetCursorPos
+  // this is a glfw mechanism problem
+  glfwPollEvents();
+  glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
+  /* Loop until the user closes the window */
+  while (!glfwWindowShouldClose(window)) {
+    // reset
+    glClearColor(0.f, 0.f, 0.4f, 0.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // view control
+    computeMatricesFromInputs(projection, view);
+    glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
+    glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
+    glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
+
+    // draw mesh
+    glBindVertexArray(mesh.vao);
+    glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
+
+    /* Swap front and back buffers */
+    glfwSwapBuffers(window);
+
+    /* Poll for and process events */
+    glfwPollEvents();
+  }
+
+  releaseResource();
 
   return 0;
+}
+
+void initGL() { // Initialise GLFW
+  if (!glfwInit()) {
+    fprintf(stderr, "Failed to initialize GLFW\n");
+    getchar();
+    exit(EXIT_FAILURE);
+  }
+
+  // without setting GLFW_CONTEXT_VERSION_MAJOR and _MINOR，
+  // OpenGL 1.x will be used
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
+  // must be used if OpenGL version >= 3.0
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  // Open a window and create its OpenGL context
+  window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "With normal mapping",
+                            NULL, NULL);
+
+  if (window == NULL) {
+    std::cout << "Failed to open GLFW window." << std::endl;
+    glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
+
+  glfwMakeContextCurrent(window);
+  glfwSetKeyCallback(window, keyCallback);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+  /* Initialize GLEW */
+  // without this, glGenVertexArrays will report ERROR!
+  glewExperimental = GL_TRUE;
+
+  if (glewInit() != GLEW_OK) {
+    fprintf(stderr, "Failed to initialize GLEW\n");
+    getchar();
+    glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
+
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST); // must enable depth test!!
+
+  glPointSize(10);
+  glLineWidth(2.0f);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+}
+
+void initMatrix() {
+  // transform matrix
+  uniM = myGetUniformLocation(exeShader, "M");
+  uniV = myGetUniformLocation(exeShader, "V");
+  uniP = myGetUniformLocation(exeShader, "P");
+
+  model = translate(mat4(1.f), vec3(0.f, 0.f, 0.f));
+  view = lookAt(eyePoint,     // eye position
+                eyeDirection, // look at
+                up            // up
+  );
+
+  projection =
+      perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.f);
+
+  glUniformMatrix4fv(uniM, 1, GL_FALSE, value_ptr(model));
+  glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
+  glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
+
+  uniEyePoint = myGetUniformLocation(exeShader, "eyePoint");
+  glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
+}
+
+void initLight() { // light
+  uniLightColor = myGetUniformLocation(exeShader, "lightColor");
+  glUniform3fv(uniLightColor, 1, value_ptr(lightColor));
+
+  uniLightPosition = myGetUniformLocation(exeShader, "lightPosition");
+  glUniform3fv(uniLightPosition, 1, value_ptr(lightPosition));
+
+  // uniLightPower = myGetUniformLocation(exeShader, "lightPower");
+  // glUniform1f(uniLightPower, lightPower);
+}
+
+void initShader() {
+  // build shader program
+  exeShader = buildShader("./shader/vsPhong.glsl", "./shader/fsPhong.glsl");
+  glUseProgram(exeShader);
+}
+
+void releaseResource() { glfwTerminate(); }
+
+void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
+  // glfwGetTime is called only once, the first time this function is called
+  static float lastTime = glfwGetTime();
+
+  // Compute time difference between current and last frame
+  float currentTime = glfwGetTime();
+  float deltaTime = float(currentTime - lastTime);
+
+  // Get mouse position
+  double xpos, ypos;
+  glfwGetCursorPos(window, &xpos, &ypos);
+
+  // std::cout << xpos << ", " << ypos << '\n';
+
+  // Reset mouse position for next frame
+  glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
+  // Compute new orientation
+  // The cursor is set to the center of the screen last frame,
+  // so (currentCursorPos - center) is the offset of this frame
+  horizontalAngle += mouseSpeed * float(xpos - WINDOW_WIDTH / 2.f);
+  verticalAngle += mouseSpeed * float(-ypos + WINDOW_HEIGHT / 2.f);
+
+  // Direction : Spherical coordinates to Cartesian coordinates conversion
+  vec3 direction =
+      vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
+           sin(verticalAngle) * sin(horizontalAngle));
+
+  // Right vector
+  vec3 right = vec3(cos(horizontalAngle - 3.14 / 2.f), 0.f,
+                    sin(horizontalAngle - 3.14 / 2.f));
+
+  // new up vector
+  vec3 newUp = cross(right, direction);
+
+  // Move forward
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    eyePoint += direction * deltaTime * speed;
+  }
+  // Move backward
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    eyePoint -= direction * deltaTime * speed;
+  }
+  // Strafe right
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    eyePoint += right * deltaTime * speed;
+  }
+  // Strafe left
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    eyePoint -= right * deltaTime * speed;
+  }
+
+  // float FoV = initialFoV;
+  newProject =
+      perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.f);
+  // Camera matrix
+  newView = lookAt(eyePoint, eyePoint + direction, newUp);
+
+  // For the next frame, the "last time" will be "now"
+  lastTime = currentTime;
+}
+
+// calculate the position of the cell which covers the specified point
+vec3 calCellPos(vec3 pt) {
+  // change reference frame
+  vec3 ptRef = pt - gridOrigin;
+
+  // grid index along each axis of this cell
+  int ix = int(floor(ptRef.x / cellSize));
+  int iy = int(floor(ptRef.y / cellSize));
+  int iz = int(floor(ptRef.z / cellSize));
+
+  // position of this cell
+  vec3 posRef = vec3(ix * cellSize, iy * cellSize, iz * cellSize);
+
+  // change reference frame
+  vec3 pos = posRef + gridOrigin;
+
+  return pos;
 }

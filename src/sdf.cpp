@@ -230,3 +230,16 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
 
   return dist * sign;
 }
+
+// using world space position to calculate node hash
+int calCellHash(vec3 pos, ivec3 nOfCells, float cellSize) {
+  std::cout << to_string(nOfCells) << '\n';
+
+  int hx = int(floor(pos.x / cellSize));
+  int hy = int(floor(pos.y / cellSize) * nOfCells.x);
+  int hz = int(floor(pos.z / cellSize) * nOfCells.x * nOfCells.y);
+
+  return (hx + hy + hz);
+}
+
+//
