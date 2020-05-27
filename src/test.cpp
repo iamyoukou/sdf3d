@@ -28,11 +28,12 @@ vec3 eyeDirection =
          sin(verticalAngle) * sin(horizontalAngle));
 vec3 up = vec3(0.f, 1.f, 0.f);
 
-/* for voxelizer */
+/* for sdf */
 ivec3 nOfCells;
 float cellSize = 0.25f;
 vec3 gridOrigin(0, 0, 0);
 vec3 rangeOffset(0.5f, 0.5f, 0.5f);
+Grid grid;
 
 /* opengl variables */
 GLuint exeShader;
@@ -47,9 +48,12 @@ void initGL();
 void initMatrix();
 void initLight();
 void initShader();
+void initGrid();
 void releaseResource();
 
 void writePointCloud(vector<vec3> &, const string);
+void writeSdf(Grid &, const string);
+void readSdf(Grid &, const string);
 vec3 calCellPos(vec3);
 
 int main(int argc, char const *argv[]) {
@@ -78,6 +82,8 @@ int main(int argc, char const *argv[]) {
   // there is a offset area which is defined by rangeOffset
   vec3 gridSize = (mesh.max + rangeOffset * 2.0f) - gridOrigin;
   nOfCells = ivec3(gridSize / cellSize);
+
+  // initGrid();
 
   /* find a searching range */
   // select an area a little bigger than mesh's aabb
@@ -121,18 +127,33 @@ int main(int argc, char const *argv[]) {
   //           // we keep dist at the positive one
   //           dist = (temp > 0) ? temp : oldDist;
   //         }
-  //
   //       } // end iterate triangles
   //
-  //       // use sdf3d as a solid voxelier
-  //       // if dist < threshold, output grid position
-  //       float threshold = 0.f;
-  //       if (dist < threshold) {
-  //         pointCloud.push_back(P);
-  //       }
+  //       // write dist into grid
+  //       int hash = calCellHash(P, nOfCells, cellSize);
+  //       grid.cells[hash].sd = dist;
   //     } // end x direction
   //   }   // end y direction
   // }     // end z direction
+
+  // std::cout << to_string(grid.cells[25].idx) << '\n';
+  // std::cout << to_string(grid.cells[25].pos) << '\n';
+  // std::cout << grid.cells.size() << '\n';
+
+  // writeSdf(grid, "sdf.txt");
+
+  readSdf(grid, "sdf.txt");
+
+  // test sdf
+  // vector<Point> pts;
+  // for (size_t i = 0; i < grid.cells.size(); i++) {
+  //   Cell &cell = grid.cells[i];
+  //   Point pt;
+  //
+  //   pt.pos = cell.pos;
+  //
+  //   pts.push_back(pt);
+  // }
 
   /* glfw loop */
   // a rough way to solve cursor position initialization problem
@@ -154,8 +175,10 @@ int main(int argc, char const *argv[]) {
     glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
     // draw mesh
-    glBindVertexArray(mesh.vao);
-    glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
+    // glBindVertexArray(mesh.vao);
+    // glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
+
+    // drawPoints(pts);
 
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
@@ -340,4 +363,78 @@ vec3 calCellPos(vec3 pt) {
   vec3 pos = posRef + gridOrigin;
 
   return pos;
+}
+
+void initGrid() {
+  // ATTENTION: the order of iterating x, y, z relates to
+  // the hash of cell index
+  for (size_t iz = 0; iz < nOfCells.z; iz++) {
+    for (size_t iy = 0; iy < nOfCells.y; iy++) {
+      for (size_t ix = 0; ix < nOfCells.x; ix++) {
+        Cell cell;
+
+        cell.idx = ivec3(ix, iy, iz);
+        cell.sd = 9999.f;
+
+        cell.pos = vec3(ix, iy, iz) * cellSize + gridOrigin;
+
+        grid.cells.push_back(cell);
+      } // end of iterate x
+    }   // end of iterate y
+  }     // end of iterate z
+}
+
+// format: x, y, z, i, j, k, dist
+void writeSdf(Grid &gd, const string fileName) {
+  ofstream output(fileName);
+
+  for (size_t i = 0; i < gd.cells.size(); i++) {
+    Cell &cell = gd.cells[i];
+
+    output << cell.pos.x;
+    output << " ";
+    output << cell.pos.y;
+    output << " ";
+    output << cell.pos.z;
+    output << " ";
+    output << cell.idx.x;
+    output << " ";
+    output << cell.idx.y;
+    output << " ";
+    output << cell.idx.z;
+    output << " ";
+    output << cell.sd;
+    output << '\n';
+  }
+
+  output.close();
+}
+
+// format: x, y, z, i, j, k, dist
+void readSdf(Grid &gd, const string fileName) {
+  ifstream fin;
+  fin.open(fileName.c_str());
+
+  if (!(fin.good())) {
+    cout << "failed to open file : " << fileName << std::endl;
+  }
+
+  // read file
+  while (fin.peek() != EOF) {
+    Cell cell;
+
+    fin >> cell.pos.x;
+    fin >> cell.pos.y;
+    fin >> cell.pos.z;
+
+    fin >> cell.idx.x;
+    fin >> cell.idx.y;
+    fin >> cell.idx.z;
+
+    fin >> cell.sd;
+
+    gd.cells.push_back(cell);
+  } // end read file
+
+  fin.close();
 }

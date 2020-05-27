@@ -61,10 +61,10 @@ int main(int argc, char const *argv[]) {
   std::vector<glm::vec3> pointCloud;
 
   /* prepare mesh data */
-  // Mesh mesh = loadObj("./mesh/sphere.obj");
+  Mesh mesh = loadObj("./mesh/sphere.obj");
   // Mesh mesh = loadObj("./mesh/monkey.obj");
   // Mesh mesh = loadObj("./mesh/torus.obj");
-  Mesh mesh = loadObj("./mesh/bunny.obj");
+  // Mesh mesh = loadObj("./mesh/bunny.obj");
   // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
@@ -248,9 +248,8 @@ int main(int argc, char const *argv[]) {
   return 0;
 }
 
-void writePointCloud(std::vector<glm::vec3> &pointCloud,
-                     const std::string fileName) {
-  std::ofstream output(fileName);
+void writePointCloud(vector<vec3> &pointCloud, const string fileName) {
+  ofstream output(fileName);
 
   for (size_t i = 0; i < pointCloud.size(); i++) {
     output << pointCloud[i].x;

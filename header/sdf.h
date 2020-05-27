@@ -11,7 +11,8 @@ using namespace std;
 using namespace glm;
 
 typedef struct {
-  ivec3 idx; // (i, j, k)
+  ivec3 idx; // index (i, j, k) in grid space
+  vec3 pos;  // position in world space
   float sd;  // signed distance
 } Node, Cell;
 

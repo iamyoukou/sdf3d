@@ -232,8 +232,10 @@ float distPoint2Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 n,
 }
 
 // using world space position to calculate node hash
+// pay attention to the order of x, y, z
+// otherwise, a index error happens
 int calCellHash(vec3 pos, ivec3 nOfCells, float cellSize) {
-  std::cout << to_string(nOfCells) << '\n';
+  // std::cout << to_string(nOfCells) << '\n';
 
   int hx = int(floor(pos.x / cellSize));
   int hy = int(floor(pos.y / cellSize) * nOfCells.x);
