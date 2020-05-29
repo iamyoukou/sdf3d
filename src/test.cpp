@@ -83,16 +83,16 @@ int main(int argc, char const *argv[]) {
   vec3 gridSize = (mesh.max + rangeOffset * 2.0f) - gridOrigin;
   nOfCells = ivec3(gridSize / cellSize);
 
-  // initGrid();
+  initGrid();
 
   /* find a searching range */
   // select an area a little bigger than mesh's aabb
-  vec3 rangeMin = mesh.min - rangeOffset;
-  vec3 rangeMax = mesh.max + rangeOffset;
+  // vec3 rangeMin = mesh.min - rangeOffset;
+  // vec3 rangeMax = mesh.max + rangeOffset;
 
   // find cells which cover those area
-  vec3 startCell = calCellPos(rangeMin);
-  vec3 endCell = calCellPos(rangeMax);
+  // vec3 startCell = calCellPos(rangeMin);
+  // vec3 endCell = calCellPos(rangeMax);
 
   // for the selected range
   // for (float z = startCell.z; z < endCell.z; z += cellSize) {
@@ -142,18 +142,20 @@ int main(int argc, char const *argv[]) {
 
   // writeSdf(grid, "sdf.txt");
 
-  readSdf(grid, "sdf.txt");
+  // readSdf(grid, "sdf.txt");
 
-  // test sdf
-  // vector<Point> pts;
-  // for (size_t i = 0; i < grid.cells.size(); i++) {
-  //   Cell &cell = grid.cells[i];
-  //   Point pt;
-  //
-  //   pt.pos = cell.pos;
-  //
-  //   pts.push_back(pt);
-  // }
+  // std::cout << "nOfCells = " << to_string(grid.nOfCells) << '\n';
+
+  // test
+  std::vector<Point> pts;
+  Point p1;
+  p1.pos = vec3(0.75, 0.35, 0.05);
+  pts.push_back(p1);
+
+  vec3 start = p1.pos;
+  vec3 end = p1.pos + (grid.getGradient(p1.pos) * grid.getDistance(p1.pos));
+
+  // std::cout << to_string(grid.getGradient(p1.pos)) << '\n';
 
   /* glfw loop */
   // a rough way to solve cursor position initialization problem
@@ -175,10 +177,11 @@ int main(int argc, char const *argv[]) {
     glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
     // draw mesh
-    // glBindVertexArray(mesh.vao);
-    // glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
+    glBindVertexArray(mesh.vao);
+    glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
 
-    // drawPoints(pts);
+    drawPoints(pts);
+    drawLine(start, end);
 
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
@@ -366,22 +369,28 @@ vec3 calCellPos(vec3 pt) {
 }
 
 void initGrid() {
+  grid.origin = gridOrigin;
+  grid.cellSize = cellSize;
+  grid.nOfCells = nOfCells;
+
   // ATTENTION: the order of iterating x, y, z relates to
   // the hash of cell index
-  for (size_t iz = 0; iz < nOfCells.z; iz++) {
-    for (size_t iy = 0; iy < nOfCells.y; iy++) {
-      for (size_t ix = 0; ix < nOfCells.x; ix++) {
-        Cell cell;
+  // for (size_t iz = 0; iz < nOfCells.z; iz++) {
+  //   for (size_t iy = 0; iy < nOfCells.y; iy++) {
+  //     for (size_t ix = 0; ix < nOfCells.x; ix++) {
+  //       Cell cell;
+  //
+  //       cell.idx = ivec3(ix, iy, iz);
+  //       cell.sd = 9999.f;
+  //
+  //       cell.pos = vec3(ix, iy, iz) * cellSize + gridOrigin;
+  //
+  //       grid.cells.push_back(cell);
+  //     } // end of iterate x
+  //   }   // end of iterate y
+  // }     // end of iterate z
 
-        cell.idx = ivec3(ix, iy, iz);
-        cell.sd = 9999.f;
-
-        cell.pos = vec3(ix, iy, iz) * cellSize + gridOrigin;
-
-        grid.cells.push_back(cell);
-      } // end of iterate x
-    }   // end of iterate y
-  }     // end of iterate z
+  readSdf(grid, "sdf.txt");
 }
 
 // format: x, y, z, i, j, k, dist
@@ -435,6 +444,8 @@ void readSdf(Grid &gd, const string fileName) {
 
     gd.cells.push_back(cell);
   } // end read file
+
+  // std::cout << "cells.size()" << gd.cells.size() << '\n';
 
   fin.close();
 }

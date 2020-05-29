@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtx/compatibility.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -19,8 +20,16 @@ typedef struct {
 class Grid {
 public:
   /* Members */
-  // use hash to access each cell
-  vector<Cell> cells;
+  vector<Cell> cells; // use hash to access each cell
+  vec3 origin;
+  float cellSize;
+  ivec3 nOfCells;
+
+  /* Member functions */
+  float getDistance(vec3);
+  float getDistance(int);
+  vec3 getGradient(vec3);
+  int calCellHash(vec3);
 
   /* Constructors */
   Grid() {}
