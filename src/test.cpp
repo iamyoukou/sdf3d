@@ -18,7 +18,7 @@ float lightPower = 1.f;
 float verticalAngle = -2.76603;
 float horizontalAngle = 1.56834;
 float initialFoV = 45.0f;
-float speed = 5.0f;
+float speed = 1.0f;
 float mouseSpeed = 0.005f;
 
 mat4 model, view, projection;
@@ -30,9 +30,9 @@ vec3 up = vec3(0.f, 1.f, 0.f);
 
 /* for sdf */
 ivec3 nOfCells;
-float cellSize = 0.25f;
+float cellSize = 0.1f;
 vec3 gridOrigin(0, 0, 0);
-vec3 rangeOffset(0.5f, 0.5f, 0.5f);
+vec3 rangeOffset(0.2f, 0.2f, 0.2f);
 Grid grid;
 
 /* opengl variables */
@@ -72,11 +72,11 @@ int main(int argc, char const *argv[]) {
   initLight();
 
   /* prepare mesh data */
-  // Mesh mesh = loadObj("./mesh/sphere.obj");
+  Mesh mesh = loadObj("./mesh/sphere.obj");
   // Mesh mesh = loadObj("./mesh/monkey.obj");
   // Mesh mesh = loadObj("./mesh/torus.obj");
   // Mesh mesh = loadObj("./mesh/bunny.obj");
-  Mesh mesh = loadObj("./mesh/cube.obj");
+  // Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
 
@@ -152,9 +152,9 @@ int main(int argc, char const *argv[]) {
 
   // test
   std::vector<Point> pts;
-  for (size_t i = 0; i < 30; i++) {
+  for (size_t i = 0; i < 60; i++) {
     Point p;
-    p.pos = vec3(0, 0.1 * i, 1.25);
+    p.pos = vec3(randf(), randf(), randf()) * 3.f;
     pts.push_back(p);
   }
   // Point p;
@@ -162,17 +162,6 @@ int main(int argc, char const *argv[]) {
   // p.v = vec3(randf(), randf(), randf());
   // pts.push_back(p);
   //
-  //
-  // std::vector<vec3> starts, ends;
-  // for (size_t i = 0; i < pts.size(); i++) {
-  //   vec3 start = pts[i].pos;
-  //   vec3 end = pts[i].pos +
-  //              (grid.getGradient(pts[i].pos) * grid.getDistance(pts[i].pos));
-  //
-  //   starts.push_back(start);
-  //   ends.push_back(end);
-  // }
-
   /* glfw loop */
   // a rough way to solve cursor position initialization problem
   // must call glfwPollEvents once to activate glfwSetCursorPos
@@ -201,23 +190,15 @@ int main(int argc, char const *argv[]) {
     glBindVertexArray(mesh.vao);
     glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
 
-    // std::cout << "point: " << to_string(pts[0].pos)
-    //           << ", dist = " << grid.getDistance(pts[0].pos) << '\n';
-
     drawPoints(pts);
-    // vec3 start = pts[0].pos;
-    // vec3 end =
-    //     start + (grid.getGradient(pts[0].pos) *
-    //     grid.getDistance(pts[0].pos));
-    // drawLine(start, end);
     //
-    // pts[0].pos += vec3(0, 0, 0.1);
-
     for (size_t i = 0; i < pts.size(); i++) {
-      vec3 start = pts[i].pos;
-      vec3 end =
-          start + (grid.getGradient(pts[i].pos) * grid.getDistance(pts[i].pos));
-      drawLine(start, end);
+      if (grid.getDistance(pts[i].pos) < 0.5f) {
+        vec3 start = pts[i].pos;
+        vec3 end = start + (grid.getGradient(pts[i].pos) *
+                            grid.getDistance(pts[i].pos));
+        drawLine(start, end);
+      }
     }
 
     /* Swap front and back buffers */
@@ -427,7 +408,8 @@ void initGrid() {
   //   }   // end of iterate y
   // }     // end of iterate z
 
-  readSdf(grid, "sdfCube.txt");
+  // readSdf(grid, "sdfCube.txt");
+  readSdf(grid, "sdfSphere.txt");
 }
 
 // format: x, y, z, i, j, k, dist
