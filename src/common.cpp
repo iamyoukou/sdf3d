@@ -596,14 +596,13 @@ void drawPoints(std::vector<Point> &pts) { // array data
   glEnableVertexAttribArray(0);
 
   // color
-  // glBindBuffer(GL_ARRAY_BUFFER, ps.vboColor);
-  // // buffer orphaning
-  // glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), NULL,
+  // GLuint vboColor;
+  // glGenBuffers(1, &vboColor);
+  // glBindBuffer(GL_ARRAY_BUFFER, vboColor);
+  // glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), aColor,
   //              GL_STREAM_DRAW);
-  // for (size_t i = 0; i < nOfPs; i++) {
-  //   glBufferSubData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * i,
-  //                   sizeof(GLfloat) * 3, &aColor[i * 3]);
-  // }
+  // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  // glEnableVertexAttribArray(1);
 
   glDrawArrays(GL_POINTS, 0, nOfPs);
 
@@ -611,6 +610,7 @@ void drawPoints(std::vector<Point> &pts) { // array data
   delete[] aPos;
   // delete[] aColor;
   glDeleteBuffers(1, &vboPos);
+  // glDeleteBuffers(1, &vboColor);
   glDeleteVertexArrays(1, &vao);
 }
 

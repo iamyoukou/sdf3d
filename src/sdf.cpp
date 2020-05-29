@@ -259,14 +259,20 @@ float Grid::getDistance(int hash) { return cells[hash].sd; }
 // retrieve signed distance by point position
 float Grid::getDistance(vec3 p) {
   // restriction
-  int hash = calCellHash(p);
+  ivec3 idx = floor(p / cellSize);
+
   // std::cout << "hash = " << hash << '\n';
   // std::cout << "cells.size() = " << cells.size() << '\n';
 
-  if (hash < 0 || hash > cells.size()) {
+  // note that grid origin is set to world origin (0, 0, 0)
+  if (idx.x < 0 || idx.x > nOfCells.x - 1) {
+    return 9999.f;
+  } else if (idx.y < 0 || idx.y > nOfCells.y - 1) {
+    return 9999.f;
+  } else if (idx.z < 0 || idx.z > nOfCells.z - 1) {
     return 9999.f;
   } else {
-    // std::cout << "dist = " << cells[hash].sd << '\n';
+    int hash = calCellHash(p);
     return cells[hash].sd;
   }
 }

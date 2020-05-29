@@ -56,6 +56,15 @@ void writeSdf(Grid &, const string);
 void readSdf(Grid &, const string);
 vec3 calCellPos(vec3);
 
+// random number in [0, 1]
+float randf() {
+  // srand(clock());
+
+  float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+  return f;
+}
+
 int main(int argc, char const *argv[]) {
   initGL();
   initShader();
@@ -63,11 +72,11 @@ int main(int argc, char const *argv[]) {
   initLight();
 
   /* prepare mesh data */
-  Mesh mesh = loadObj("./mesh/sphere.obj");
+  // Mesh mesh = loadObj("./mesh/sphere.obj");
   // Mesh mesh = loadObj("./mesh/monkey.obj");
   // Mesh mesh = loadObj("./mesh/torus.obj");
   // Mesh mesh = loadObj("./mesh/bunny.obj");
-  // Mesh mesh = loadObj("./mesh/cube.obj");
+  Mesh mesh = loadObj("./mesh/cube.obj");
   initMesh(mesh);
   findAABB(mesh);
 
@@ -80,19 +89,22 @@ int main(int argc, char const *argv[]) {
   // The grid covers the area of mesh
   // Between the grid and the mesh,
   // there is a offset area which is defined by rangeOffset
-  vec3 gridSize = (mesh.max + rangeOffset * 2.0f) - gridOrigin;
+  vec3 gridSize = (mesh.max + rangeOffset) - gridOrigin;
   nOfCells = ivec3(gridSize / cellSize);
 
   initGrid();
 
   /* find a searching range */
   // select an area a little bigger than mesh's aabb
-  // vec3 rangeMin = mesh.min - rangeOffset;
-  // vec3 rangeMax = mesh.max + rangeOffset;
+  vec3 rangeMin = mesh.min - rangeOffset;
+  vec3 rangeMax = mesh.max + rangeOffset;
+
+  // std::cout << to_string(rangeMin) << '\n';
+  // std::cout << to_string(rangeMax) << '\n';
 
   // find cells which cover those area
-  // vec3 startCell = calCellPos(rangeMin);
-  // vec3 endCell = calCellPos(rangeMax);
+  vec3 startCell = calCellPos(rangeMin);
+  vec3 endCell = calCellPos(rangeMax);
 
   // for the selected range
   // for (float z = startCell.z; z < endCell.z; z += cellSize) {
@@ -136,26 +148,30 @@ int main(int argc, char const *argv[]) {
   //   }   // end y direction
   // }     // end z direction
 
-  // std::cout << to_string(grid.cells[25].idx) << '\n';
-  // std::cout << to_string(grid.cells[25].pos) << '\n';
-  // std::cout << grid.cells.size() << '\n';
-
   // writeSdf(grid, "sdf.txt");
-
-  // readSdf(grid, "sdf.txt");
-
-  // std::cout << "nOfCells = " << to_string(grid.nOfCells) << '\n';
 
   // test
   std::vector<Point> pts;
-  Point p1;
-  p1.pos = vec3(0.75, 0.35, 0.05);
-  pts.push_back(p1);
-
-  vec3 start = p1.pos;
-  vec3 end = p1.pos + (grid.getGradient(p1.pos) * grid.getDistance(p1.pos));
-
-  // std::cout << to_string(grid.getGradient(p1.pos)) << '\n';
+  for (size_t i = 0; i < 30; i++) {
+    Point p;
+    p.pos = vec3(0, 0.1 * i, 1.25);
+    pts.push_back(p);
+  }
+  // Point p;
+  // p.pos = vec3(0, 1.5, 0);
+  // p.v = vec3(randf(), randf(), randf());
+  // pts.push_back(p);
+  //
+  //
+  // std::vector<vec3> starts, ends;
+  // for (size_t i = 0; i < pts.size(); i++) {
+  //   vec3 start = pts[i].pos;
+  //   vec3 end = pts[i].pos +
+  //              (grid.getGradient(pts[i].pos) * grid.getDistance(pts[i].pos));
+  //
+  //   starts.push_back(start);
+  //   ends.push_back(end);
+  // }
 
   /* glfw loop */
   // a rough way to solve cursor position initialization problem
@@ -163,6 +179,11 @@ int main(int argc, char const *argv[]) {
   // this is a glfw mechanism problem
   glfwPollEvents();
   glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
+  for (size_t i = 0; i < pts.size(); i++) {
+    std::cout << "point: " << to_string(pts[i].pos)
+              << ", dist = " << grid.getDistance(pts[i].pos) << '\n';
+  }
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window)) {
@@ -180,8 +201,24 @@ int main(int argc, char const *argv[]) {
     glBindVertexArray(mesh.vao);
     glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
 
+    // std::cout << "point: " << to_string(pts[0].pos)
+    //           << ", dist = " << grid.getDistance(pts[0].pos) << '\n';
+
     drawPoints(pts);
-    drawLine(start, end);
+    // vec3 start = pts[0].pos;
+    // vec3 end =
+    //     start + (grid.getGradient(pts[0].pos) *
+    //     grid.getDistance(pts[0].pos));
+    // drawLine(start, end);
+    //
+    // pts[0].pos += vec3(0, 0, 0.1);
+
+    for (size_t i = 0; i < pts.size(); i++) {
+      vec3 start = pts[i].pos;
+      vec3 end =
+          start + (grid.getGradient(pts[i].pos) * grid.getDistance(pts[i].pos));
+      drawLine(start, end);
+    }
 
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
@@ -390,7 +427,7 @@ void initGrid() {
   //   }   // end of iterate y
   // }     // end of iterate z
 
-  readSdf(grid, "sdf.txt");
+  readSdf(grid, "sdfCube.txt");
 }
 
 // format: x, y, z, i, j, k, dist

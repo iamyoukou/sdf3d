@@ -4,6 +4,7 @@
 in vec3 lightDir;
 in vec3 viewDir;
 in vec3 normal;
+// in vec3 color;
 
 // uniform sampler2D texBase, texNormal;
 uniform float lightPower;
@@ -28,4 +29,7 @@ void main(){
 
     vec4 baseColor = vec4(0, 0.5, 0, 0);
     outputColor += baseColor;
+
+    // test
+    // outputColor = vec4(color, 0);
 }
