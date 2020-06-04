@@ -89,7 +89,7 @@ Mesh loadObj(std::string);
 GLuint buildShader(string, string);
 GLuint compileShader(string, GLenum);
 GLuint linkShader(GLuint, GLuint);
-void initMesh(Mesh &);
+void createMesh(Mesh &);
 void printLog(GLuint &);
 GLint myGetUniformLocation(GLuint &, std::string);
 void findAABB(Mesh &);

@@ -5,9 +5,11 @@
 #include <fstream>
 
 GLint uniMvp;
+GLint uniM, uniV, uniP;
 GLFWwindow *window;
-GLuint exeShader;
+GLuint shaderPoints, shaderSphere;
 Particles particles;
+Mesh sphere;
 
 void initGL();
 void initShader();
@@ -54,6 +56,9 @@ int main(int argc, char **argv) {
   initParticles();
   initBuffers();
 
+  sphere = loadObj("./mesh/sphere.obj");
+  createMesh(sphere);
+
   // a rough way to solve cursor position initialization problem
   // must call glfwPollEvents once to activate glfwSetCursorPos
   // this is a glfw mechanism problem
@@ -68,14 +73,26 @@ int main(int argc, char **argv) {
 
     // view control
     computeMatricesFromInputs(projection, view);
-    mat4 mvp = projection * view * model;
-    glUniformMatrix4fv(uniMvp, 1, GL_FALSE, value_ptr(mvp));
 
     // simulation
     step();
 
     // draw points
+    glUseProgram(shaderPoints);
+
+    mat4 mvp = projection * view * model;
+    glUniformMatrix4fv(uniMvp, 1, GL_FALSE, value_ptr(mvp));
+
     drawPoints(particles);
+
+    // draw mesh
+    glUseProgram(shaderSphere);
+
+    glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
+    glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
+
+    glBindVertexArray(sphere.vao);
+    glDrawArrays(GL_TRIANGLES, 0, sphere.faces.size() * 3);
 
     // refresh
     glfwSwapBuffers(window);
@@ -138,13 +155,14 @@ void initGL() { // Initialise GLFW
 }
 
 void initShader() {
-  // build shader exeShader
-  exeShader = buildShader("./shader/vsPoint.glsl", "./shader/fsPoint.glsl");
-  glUseProgram(exeShader);
+  shaderPoints = buildShader("./shader/vsPoint.glsl", "./shader/fsPoint.glsl");
+  shaderSphere = buildShader("./shader/vsPhong.glsl", "./shader/fsPhong.glsl");
 }
 
 void initMatrix() {
-  uniMvp = glGetUniformLocation(exeShader, "mvp");
+  /* for particles */
+  glUseProgram(shaderPoints);
+  uniMvp = glGetUniformLocation(shaderPoints, "mvp");
 
   model = translate(mat4(1.f), vec3(0.f, 0.f, -4.f));
   view = lookAt(eyePoint,     // eye position
@@ -156,6 +174,17 @@ void initMatrix() {
   mat4 mvp = projection * view * model;
 
   glUniformMatrix4fv(uniMvp, 1, GL_FALSE, value_ptr(mvp));
+
+  /* for mesh */
+  glUseProgram(shaderSphere);
+
+  uniM = glGetUniformLocation(shaderSphere, "M");
+  uniV = glGetUniformLocation(shaderSphere, "V");
+  uniP = glGetUniformLocation(shaderSphere, "P");
+
+  glUniformMatrix4fv(uniM, 1, GL_FALSE, value_ptr(model));
+  glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
+  glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
 }
 
 void initBuffers() {
@@ -263,8 +292,6 @@ void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
   double xpos, ypos;
   glfwGetCursorPos(window, &xpos, &ypos);
 
-  // std::cout << xpos << ", " << ypos << '\n';
-
   // Reset mouse position for next frame
   glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 
@@ -339,54 +366,4 @@ void keyCallback(GLFWwindow *keyWnd, int key, int scancode, int action,
       break;
     }
   }
-}
-
-void drawPoints(Particles &ps) {
-  // array data
-  int nOfPs = ps.Ps.size();
-  GLfloat *aPos = new GLfloat[nOfPs * 3];
-  // GLfloat *aColor = new GLfloat[nOfPs * 3];
-
-  // implant data
-  for (size_t i = 0; i < nOfPs; i++) {
-    // positions
-    Point &p = ps.Ps[i];
-    aPos[i * 3 + 0] = p.pos.x;
-    aPos[i * 3 + 1] = p.pos.y;
-    aPos[i * 3 + 2] = p.pos.z;
-
-    // colors
-    // aColor[i * 3 + 0] = p.color.r;
-    // aColor[i * 3 + 1] = p.color.g;
-    // aColor[i * 3 + 2] = p.color.b;
-  }
-
-  // selete vao
-  glBindVertexArray(ps.vao);
-
-  // position
-  glBindBuffer(GL_ARRAY_BUFFER, ps.vboPos);
-  // buffer orphaning
-  glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), NULL,
-               GL_STREAM_DRAW);
-  for (size_t i = 0; i < nOfPs; i++) {
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * i,
-                    sizeof(GLfloat) * 3, &aPos[i * 3]);
-  }
-
-  // color
-  // glBindBuffer(GL_ARRAY_BUFFER, ps.vboColor);
-  // // buffer orphaning
-  // glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), NULL,
-  //              GL_STREAM_DRAW);
-  // for (size_t i = 0; i < nOfPs; i++) {
-  //   glBufferSubData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * i,
-  //                   sizeof(GLfloat) * 3, &aColor[i * 3]);
-  // }
-
-  glDrawArrays(GL_POINTS, 0, nOfPs);
-
-  // release
-  delete[] aPos;
-  // delete[] aColor;
 }
