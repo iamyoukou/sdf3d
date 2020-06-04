@@ -212,40 +212,6 @@ GLint myGetUniformLocation(GLuint &prog, std::string name) {
   return location;
 }
 
-void keyCallback(GLFWwindow *keyWnd, int key, int scancode, int action,
-                 int mods) {
-  if (action == GLFW_PRESS) {
-    switch (key) {
-    case GLFW_KEY_ESCAPE: {
-      glfwSetWindowShouldClose(keyWnd, GLFW_TRUE);
-      break;
-    }
-    case GLFW_KEY_F: {
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-      break;
-    }
-    case GLFW_KEY_L: {
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      break;
-    }
-    // case GLFW_KEY_I: {
-    //   std::cout << "eyePoint: " << to_string(eyePoint) << '\n';
-    //   std::cout << "verticleAngle: " << fmod(verticalAngle, 6.28f) << ", "
-    //             << "horizontalAngle: " << fmod(horizontalAngle, 6.28f) <<
-    //             endl;
-    //   break;
-    // }
-    // case GLFW_KEY_Y: {
-    //   saveTrigger = !saveTrigger;
-    //   frameNumber = 0;
-    //   break;
-    // }
-    default:
-      break;
-    }
-  }
-}
-
 /* Mesh class */
 void Mesh::translate(glm::vec3 xyz) {
   // move each vertex with xyz

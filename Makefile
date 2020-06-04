@@ -18,7 +18,7 @@ LIBS=-L/usr/local/Cellar/glew/2.1.0_1/lib -lglfw \
 
 SRC_DIR=/Users/YJ-work/sdf3d/src
 
-all: main test solidVoxelizer
+all: main test solidVoxelizer simulation
 
 main: main.o common.o
 	$(CXX) $(LIBS) $^ -o main
@@ -30,6 +30,10 @@ test: test.o common.o sdf.o
 
 solidVoxelizer: solidVoxelizer.o common.o sdf.o
 	$(CXX) -g $(LIBS) $^ -o solidVoxelizer
+	rm -f *.o
+
+simulation: simulation.o common.o sdf.o
+	$(CXX) -g $(LIBS) $^ -o $@
 	rm -f *.o
 
 test.o: $(SRC_DIR)/test.cpp
@@ -46,6 +50,10 @@ sdf.o: $(SRC_DIR)/sdf.cpp
 
 solidVoxelizer.o: $(SRC_DIR)/solidVoxelizer.cpp
 	$(CXX) -c $(INCS) $^ -o solidVoxelizer.o
+
+simulation.o: $(SRC_DIR)/simulation.cpp
+	$(CXX) -c $(INCS) $^ -o $@
+
 
 .PHONY: clean video
 
