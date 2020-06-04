@@ -16,7 +16,7 @@ void main(){
     vec3 reflectDir = normalize(reflect(-lightDir, normal));
 
     float ka = 0.01, kd = 0.25, ks = 0.8;
-    float alpha = 10;
+    float alpha = 50;
 
     float scale = 1;
     vec4 ambient = vec4(lightColor * ka, 1.0) * scale;
@@ -25,11 +25,11 @@ void main(){
 
     outputColor = ambient;
     outputColor += diffuse * clamp(dot(normal, lightDir), 0, 1);
-    outputColor += specular * pow(clamp(dot(reflectDir, viewDir), 0, 1), alpha);
+    // outputColor += specular * pow(clamp(dot(reflectDir, viewDir), 0, 1), alpha);
 
-    vec4 baseColor = vec4(0, 0.5, 0, 0);
+    vec4 baseColor = vec4(0, 0.25, 0, 0);
     outputColor += baseColor;
 
     // test
-    // outputColor = vec4(color, 0);
+    // outputColor = vec4(viewDir, 0);
 }

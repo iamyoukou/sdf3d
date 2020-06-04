@@ -6,6 +6,8 @@
 
 GLint uniParM, uniParV, uniParP;
 GLint uniMeshM, uniMeshV, uniMeshP;
+GLint uniMeshLightPos, uniMeshLightColor, uniMeshLightPower;
+GLint uniEyePoint;
 GLFWwindow *window;
 GLuint shaderPar, shaderSphere;
 Particles particles;
@@ -28,15 +30,19 @@ float dt = 0.01;
 vec3 g(0, -9.8, 0);
 
 // for view control
-float verticalAngle = -2.02955;
-float horizontalAngle = 1.83207;
+float verticalAngle = -2.76603;
+float horizontalAngle = 1.56834;
 float initialFoV = 45.0f;
 float speed = 5.0f;
 float mouseSpeed = 0.005f;
 
+vec3 lightPos = vec3(10.f, 10.f, 10.f);
+vec3 lightColor = vec3(1.f, 1.f, 1.f);
+float lightPower = 1.f;
+
 mat4 commonM, commonV, commonP;
-vec3 eyePoint = vec3(0.644592, 2.937514, 0.668253);
-vec3 eyeDirection =
+vec3 eyePoint = vec3(2.440995, 7.005076, 3.059731);
+vec3 eyeDir =
     vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
          sin(verticalAngle) * sin(horizontalAngle));
 vec3 up = vec3(0.f, 1.f, 0.f);
@@ -75,21 +81,23 @@ int main(int argc, char **argv) {
     computeMatricesFromInputs();
 
     // simulation
-    step();
-
-    // draw points
-    glUseProgram(shaderPar);
-
-    glUniformMatrix4fv(uniParV, 1, GL_FALSE, value_ptr(commonV));
-    glUniformMatrix4fv(uniParP, 1, GL_FALSE, value_ptr(commonP));
-
-    drawPoints(particles);
+    // step();
+    //
+    // // draw points
+    // glUseProgram(shaderPar);
+    //
+    // glUniformMatrix4fv(uniParV, 1, GL_FALSE, value_ptr(commonV));
+    // glUniformMatrix4fv(uniParP, 1, GL_FALSE, value_ptr(commonP));
+    //
+    // drawPoints(particles);
 
     // draw mesh
     glUseProgram(shaderSphere);
 
     glUniformMatrix4fv(uniMeshV, 1, GL_FALSE, value_ptr(commonV));
     glUniformMatrix4fv(uniMeshP, 1, GL_FALSE, value_ptr(commonP));
+
+    glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
     glBindVertexArray(sphere.vao);
     glDrawArrays(GL_TRIANGLES, 0, sphere.faces.size() * 3);
@@ -161,10 +169,10 @@ void initShader() {
 
 void initMatrix() {
   /* common matrix */
-  commonM = translate(mat4(1.f), vec3(0.f, 0.f, -4.f));
-  commonV = lookAt(eyePoint,     // eye position
-                   eyeDirection, // look at
-                   up            // up
+  commonM = translate(mat4(1.f), vec3(0.f, 0.f, 0.f));
+  commonV = lookAt(eyePoint, // eye position
+                   eyeDir,   // look at
+                   up        // up
   );
   commonP =
       perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 10.f);
@@ -370,6 +378,7 @@ void initUniform() {
   /* for mesh */
   glUseProgram(shaderSphere);
 
+  // transform
   uniMeshM = glGetUniformLocation(shaderSphere, "M");
   uniMeshV = glGetUniformLocation(shaderSphere, "V");
   uniMeshP = glGetUniformLocation(shaderSphere, "P");
@@ -377,4 +386,16 @@ void initUniform() {
   glUniformMatrix4fv(uniMeshM, 1, GL_FALSE, value_ptr(commonM));
   glUniformMatrix4fv(uniMeshV, 1, GL_FALSE, value_ptr(commonV));
   glUniformMatrix4fv(uniMeshP, 1, GL_FALSE, value_ptr(commonP));
+
+  // light
+  uniMeshLightPos = glGetUniformLocation(shaderSphere, "lightPos");
+  uniMeshLightColor = glGetUniformLocation(shaderSphere, "lightColor");
+  uniMeshLightPower = glGetUniformLocation(shaderSphere, "lightPower");
+
+  glUniform3fv(uniMeshLightPos, 1, value_ptr(lightPos));
+  glUniform3fv(uniMeshLightColor, 1, value_ptr(lightColor));
+  glUniform1f(uniMeshLightPower, lightPower);
+
+  uniEyePoint = glGetUniformLocation(shaderSphere, "eyePoint");
+  glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 }
