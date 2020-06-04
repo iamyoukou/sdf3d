@@ -98,3 +98,4 @@ void updateMesh(Mesh &);
 void drawTriangle(Triangle &);
 void drawLine(vec3, vec3);
 void drawPoints(std::vector<Point> &);
+void drawPoints(Particles &);

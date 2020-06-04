@@ -4,24 +4,25 @@
 
 #include <fstream>
 
-GLint uniMvp;
-GLint uniM, uniV, uniP;
+GLint uniParM, uniParV, uniParP;
+GLint uniMeshM, uniMeshV, uniMeshP;
 GLFWwindow *window;
-GLuint shaderPoints, shaderSphere;
+GLuint shaderPar, shaderSphere;
 Particles particles;
 Mesh sphere;
 
 void initGL();
 void initShader();
 void initParticles();
+void initMesh();
 void initMatrix();
+void initUniform();
 void initBuffers();
 void releaseResource();
 void step();
 void loadPoints(Particles &, const string);
-void computeMatricesFromInputs(mat4 &, mat4 &);
+void computeMatricesFromInputs();
 void keyCallback(GLFWwindow *, int, int, int, int);
-void drawPoints(Particles &);
 
 float dt = 0.01;
 vec3 g(0, -9.8, 0);
@@ -33,7 +34,7 @@ float initialFoV = 45.0f;
 float speed = 5.0f;
 float mouseSpeed = 0.005f;
 
-mat4 model, view, projection;
+mat4 commonM, commonV, commonP;
 vec3 eyePoint = vec3(0.644592, 2.937514, 0.668253);
 vec3 eyeDirection =
     vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
@@ -53,11 +54,10 @@ int main(int argc, char **argv) {
   initGL();
   initShader();
   initMatrix();
+  initUniform();
   initParticles();
+  initMesh();
   initBuffers();
-
-  sphere = loadObj("./mesh/sphere.obj");
-  createMesh(sphere);
 
   // a rough way to solve cursor position initialization problem
   // must call glfwPollEvents once to activate glfwSetCursorPos
@@ -72,24 +72,24 @@ int main(int argc, char **argv) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // view control
-    computeMatricesFromInputs(projection, view);
+    computeMatricesFromInputs();
 
     // simulation
     step();
 
     // draw points
-    glUseProgram(shaderPoints);
+    glUseProgram(shaderPar);
 
-    mat4 mvp = projection * view * model;
-    glUniformMatrix4fv(uniMvp, 1, GL_FALSE, value_ptr(mvp));
+    glUniformMatrix4fv(uniParV, 1, GL_FALSE, value_ptr(commonV));
+    glUniformMatrix4fv(uniParP, 1, GL_FALSE, value_ptr(commonP));
 
     drawPoints(particles);
 
     // draw mesh
     glUseProgram(shaderSphere);
 
-    glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
-    glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
+    glUniformMatrix4fv(uniMeshV, 1, GL_FALSE, value_ptr(commonV));
+    glUniformMatrix4fv(uniMeshP, 1, GL_FALSE, value_ptr(commonP));
 
     glBindVertexArray(sphere.vao);
     glDrawArrays(GL_TRIANGLES, 0, sphere.faces.size() * 3);
@@ -155,36 +155,19 @@ void initGL() { // Initialise GLFW
 }
 
 void initShader() {
-  shaderPoints = buildShader("./shader/vsPoint.glsl", "./shader/fsPoint.glsl");
+  shaderPar = buildShader("./shader/vsPoint.glsl", "./shader/fsPoint.glsl");
   shaderSphere = buildShader("./shader/vsPhong.glsl", "./shader/fsPhong.glsl");
 }
 
 void initMatrix() {
-  /* for particles */
-  glUseProgram(shaderPoints);
-  uniMvp = glGetUniformLocation(shaderPoints, "mvp");
-
-  model = translate(mat4(1.f), vec3(0.f, 0.f, -4.f));
-  view = lookAt(eyePoint,     // eye position
-                eyeDirection, // look at
-                up            // up
+  /* common matrix */
+  commonM = translate(mat4(1.f), vec3(0.f, 0.f, -4.f));
+  commonV = lookAt(eyePoint,     // eye position
+                   eyeDirection, // look at
+                   up            // up
   );
-  projection =
+  commonP =
       perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 10.f);
-  mat4 mvp = projection * view * model;
-
-  glUniformMatrix4fv(uniMvp, 1, GL_FALSE, value_ptr(mvp));
-
-  /* for mesh */
-  glUseProgram(shaderSphere);
-
-  uniM = glGetUniformLocation(shaderSphere, "M");
-  uniV = glGetUniformLocation(shaderSphere, "V");
-  uniP = glGetUniformLocation(shaderSphere, "P");
-
-  glUniformMatrix4fv(uniM, 1, GL_FALSE, value_ptr(model));
-  glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
-  glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
 }
 
 void initBuffers() {
@@ -239,6 +222,11 @@ void initParticles() {
   loadPoints(particles, "test.txt");
 }
 
+void initMesh() {
+  sphere = loadObj("./mesh/sphere.obj");
+  createMesh(sphere);
+}
+
 void releaseResource() { glfwTerminate(); }
 
 void step() {
@@ -280,7 +268,7 @@ void loadPoints(Particles &pars, const string fileName) {
   ifs.close();
 }
 
-void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
+void computeMatricesFromInputs() {
   // glfwGetTime is called only once, the first time this function is called
   static float lastTime = glfwGetTime();
 
@@ -330,11 +318,10 @@ void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
     eyePoint -= right * deltaTime * speed;
   }
 
-  // float FoV = initialFoV;
-  newProject =
+  // update common matrix
+  commonP =
       perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.f);
-  // Camera matrix
-  newView = lookAt(eyePoint, eyePoint + direction, newUp);
+  commonV = lookAt(eyePoint, eyePoint + direction, newUp);
 
   // For the next frame, the "last time" will be "now"
   lastTime = currentTime;
@@ -366,4 +353,28 @@ void keyCallback(GLFWwindow *keyWnd, int key, int scancode, int action,
       break;
     }
   }
+}
+
+void initUniform() {
+  /* for particles */
+  glUseProgram(shaderPar);
+
+  uniParM = glGetUniformLocation(shaderPar, "M");
+  uniParV = glGetUniformLocation(shaderPar, "V");
+  uniParP = glGetUniformLocation(shaderPar, "P");
+
+  glUniformMatrix4fv(uniParM, 1, GL_FALSE, value_ptr(commonM));
+  glUniformMatrix4fv(uniParV, 1, GL_FALSE, value_ptr(commonV));
+  glUniformMatrix4fv(uniParP, 1, GL_FALSE, value_ptr(commonP));
+
+  /* for mesh */
+  glUseProgram(shaderSphere);
+
+  uniMeshM = glGetUniformLocation(shaderSphere, "M");
+  uniMeshV = glGetUniformLocation(shaderSphere, "V");
+  uniMeshP = glGetUniformLocation(shaderSphere, "P");
+
+  glUniformMatrix4fv(uniMeshM, 1, GL_FALSE, value_ptr(commonM));
+  glUniformMatrix4fv(uniMeshV, 1, GL_FALSE, value_ptr(commonV));
+  glUniformMatrix4fv(uniMeshP, 1, GL_FALSE, value_ptr(commonP));
 }
