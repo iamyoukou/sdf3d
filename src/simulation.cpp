@@ -62,8 +62,11 @@ int main(int argc, char **argv) {
   initShader();
   initMatrix();
   initUniform();
+
   initParticles();
+
   initMesh();
+  initGrid();
 
   // a rough way to solve cursor position initialization problem
   // must call glfwPollEvents once to activate glfwSetCursorPos
@@ -246,39 +249,67 @@ void step() {
     Point &p = particles.Ps[i];
 
     p.v += dt * g;
+
+    // collision detection
+    float dist = grid.getDistance(p.pos);
+
+    // if (i == 0)
+    //   std::cout << "dist = " << dist << '\n';
+
+    if (dist < 0.1) {
+      vec3 n = grid.getGradient(p.pos);
+
+      vec3 vVer = -dot(p.v, -n) * (-n);
+      vec3 vHor = p.v - dot(p.v, -n) * (-n);
+
+      p.v = vVer + vHor;
+    }
+
     p.pos += dt * p.v;
-  }
+  } // end iterating particles
 }
 
 void loadPoints(Particles &pars, const string fileName) {
   // read point information from file
-  ifstream ifs(fileName);
+  // ifstream ifs(fileName);
+  //
+  // while (ifs.peek() != EOF) {
+  //   float x, y, z;
+  //
+  //   ifs >> x;
+  //   ifs >> y;
+  //   ifs >> z;
+  //
+  //   // ignore '\n'
+  //   // otherwise, the last empty line will be read
+  //   ifs.ignore(1);
+  //
+  //   Point p;
+  //   p.pos = (vec3(x, y, z));
+  //   // p.color = vec3(randf(), randf(), randf());
+  //   p.color = vec3(0.5, 0.5, 0.5);
+  //   p.v = vec3(0, 0, 0);
+  //   p.m = randf();
+  //
+  //   // transform
+  //   p.pos += vec3(0, 3.f, 0);
+  //
+  //   pars.Ps.push_back(p);
+  // }
+  //
+  // ifs.close();
 
-  while (ifs.peek() != EOF) {
-    float x, y, z;
+  srand(clock());
 
-    ifs >> x;
-    ifs >> y;
-    ifs >> z;
-
-    // ignore '\n'
-    // otherwise, the last empty line will be read
-    ifs.ignore(1);
-
+  for (size_t i = 0; i < 10; i++) {
     Point p;
-    p.pos = (vec3(x, y, z));
-    // p.color = vec3(randf(), randf(), randf());
-    p.color = vec3(0.5, 0.5, 0.5);
+    p.pos = vec3(randf() * 2.f, 3.5, randf() * 2.f);
     p.v = vec3(0, 0, 0);
+    p.color = vec3(0.5, 0.5, 0.5);
     p.m = randf();
-
-    // transform
-    p.pos += vec3(0, 3.f, 0);
 
     pars.Ps.push_back(p);
   }
-
-  ifs.close();
 }
 
 void computeMatricesFromInputs() {
@@ -435,16 +466,17 @@ void readSdf(Grid &gd, const string fileName) {
   fin.close();
 }
 
-// random number in [-0.5, 0.5]
 float randf() {
-  // srand(clock());
-
+  // [0, 1]
   float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-  return f - 0.5f;
+  return f + 0.25;
 }
 
 void initGrid() {
+  vec3 gridSize = (sphere.max + rangeOffset) - gridOrigin;
+  nOfCells = ivec3(gridSize / cellSize);
+
   grid.origin = gridOrigin;
   grid.cellSize = cellSize;
   grid.nOfCells = nOfCells;
