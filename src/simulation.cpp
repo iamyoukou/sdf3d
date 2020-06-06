@@ -1,6 +1,7 @@
 #include "common.h"
 #include <ctime>
 #include <cstdlib>
+#include <sdf.h>
 
 #include <fstream>
 
@@ -19,19 +20,21 @@ void initParticles();
 void initMesh();
 void initMatrix();
 void initUniform();
-void initBuffers();
+void initGrid();
 void releaseResource();
 void step();
 void loadPoints(Particles &, const string);
 void computeMatricesFromInputs();
 void keyCallback(GLFWwindow *, int, int, int, int);
+void readSdf(Grid &, const string);
+float randf();
 
 float dt = 0.01;
 vec3 g(0, -9.8, 0);
 
 // for view control
-float verticalAngle = -2.76603;
-float horizontalAngle = 1.56834;
+float verticalAngle = -2.06088;
+float horizontalAngle = 3.09614;
 float initialFoV = 45.0f;
 float speed = 5.0f;
 float mouseSpeed = 0.005f;
@@ -41,20 +44,18 @@ vec3 lightColor = vec3(1.f, 1.f, 1.f);
 float lightPower = 1.f;
 
 mat4 commonM, commonV, commonP;
-vec3 eyePoint = vec3(2.440995, 7.005076, 3.059731);
+vec3 eyePoint = vec3(-5.008293, 5, 1.803902);
 vec3 eyeDir =
     vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
          sin(verticalAngle) * sin(horizontalAngle));
 vec3 up = vec3(0.f, 1.f, 0.f);
 
-// random number in [-0.5, 0.5]
-float randf() {
-  // srand(clock());
-
-  float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-  return f - 0.5f;
-}
+/* for sdf */
+ivec3 nOfCells;
+float cellSize = 0.1f;
+vec3 gridOrigin(0, 0, 0);
+vec3 rangeOffset(0.2f, 0.2f, 0.2f);
+Grid grid;
 
 int main(int argc, char **argv) {
   initGL();
@@ -63,7 +64,6 @@ int main(int argc, char **argv) {
   initUniform();
   initParticles();
   initMesh();
-  initBuffers();
 
   // a rough way to solve cursor position initialization problem
   // must call glfwPollEvents once to activate glfwSetCursorPos
@@ -81,15 +81,15 @@ int main(int argc, char **argv) {
     computeMatricesFromInputs();
 
     // simulation
-    // step();
-    //
-    // // draw points
-    // glUseProgram(shaderPar);
-    //
-    // glUniformMatrix4fv(uniParV, 1, GL_FALSE, value_ptr(commonV));
-    // glUniformMatrix4fv(uniParP, 1, GL_FALSE, value_ptr(commonP));
-    //
-    // drawPoints(particles);
+    step();
+
+    // draw points
+    glUseProgram(shaderPar);
+
+    glUniformMatrix4fv(uniParV, 1, GL_FALSE, value_ptr(commonV));
+    glUniformMatrix4fv(uniParP, 1, GL_FALSE, value_ptr(commonP));
+
+    drawPoints(particles);
 
     // draw mesh
     glUseProgram(shaderSphere);
@@ -158,6 +158,7 @@ void initGL() { // Initialise GLFW
 
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST); // must enable depth test!!
+
   glEnable(GL_PROGRAM_POINT_SIZE);
   glPointSize(10);
 }
@@ -178,7 +179,10 @@ void initMatrix() {
       perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 10.f);
 }
 
-void initBuffers() {
+void initParticles() {
+  loadPoints(particles, "test.txt");
+
+  // create buffer
   int nOfPs = particles.Ps.size();
   GLfloat *aPos = new GLfloat[nOfPs * 3];
   GLfloat *aColor = new GLfloat[nOfPs * 3];
@@ -221,18 +225,16 @@ void initBuffers() {
   delete[] aColor;
 }
 
-void initParticles() {
-  // loadPoints(particles, "cubePointCloud.txt");
-  // loadPoints(particles, "spherePointCloud.txt");
-  // loadPoints(particles, "monkeyPointCloud.txt");
-  // loadPoints(particles, "torusPointCloud.txt");
-  // loadPoints(particles, "bunnyPointCloud.txt");
-  loadPoints(particles, "test.txt");
-}
-
 void initMesh() {
-  sphere = loadObj("./mesh/sphere.obj");
+  sphere = loadObj("./mesh/sphereSmooth.obj");
   createMesh(sphere);
+
+  findAABB(sphere);
+
+  // transform mesh to (origin + offset) position
+  vec3 offset = (gridOrigin - sphere.min) + rangeOffset;
+  sphere.translate(offset);
+  updateMesh(sphere);
 }
 
 void releaseResource() { glfwTerminate(); }
@@ -269,6 +271,9 @@ void loadPoints(Particles &pars, const string fileName) {
     p.color = vec3(0.5, 0.5, 0.5);
     p.v = vec3(0, 0, 0);
     p.m = randf();
+
+    // transform
+    p.pos += vec3(0, 3.f, 0);
 
     pars.Ps.push_back(p);
   }
@@ -398,4 +403,51 @@ void initUniform() {
 
   uniEyePoint = glGetUniformLocation(shaderSphere, "eyePoint");
   glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
+}
+
+void readSdf(Grid &gd, const string fileName) {
+  ifstream fin;
+  fin.open(fileName.c_str());
+
+  if (!(fin.good())) {
+    cout << "failed to open file : " << fileName << std::endl;
+  }
+
+  // read file
+  while (fin.peek() != EOF) {
+    Cell cell;
+
+    fin >> cell.pos.x;
+    fin >> cell.pos.y;
+    fin >> cell.pos.z;
+
+    fin >> cell.idx.x;
+    fin >> cell.idx.y;
+    fin >> cell.idx.z;
+
+    fin >> cell.sd;
+
+    gd.cells.push_back(cell);
+  } // end read file
+
+  // std::cout << "cells.size()" << gd.cells.size() << '\n';
+
+  fin.close();
+}
+
+// random number in [-0.5, 0.5]
+float randf() {
+  // srand(clock());
+
+  float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+  return f - 0.5f;
+}
+
+void initGrid() {
+  grid.origin = gridOrigin;
+  grid.cellSize = cellSize;
+  grid.nOfCells = nOfCells;
+
+  readSdf(grid, "sdfSphere.txt");
 }
