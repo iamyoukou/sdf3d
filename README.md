@@ -103,7 +103,13 @@ To solve this problem, we assume that if `abs(newDist) == abs(oldDist)`, but the
 This correctly decides `P` as outside the mesh.
 
 # Result
-## Test sdf3d with a simple simulating program
+
+## SDF-based collision detection
+
+Add some simple simulation code to test the SDF-based collision detection.
+In most cases, it works fine.
+
+![simpleCollision](./output.gif)
 
 ## Use sdf3d as a solid voxelizer
 A common way to solid-voxelize a mesh is to [use octree](https://viscomp.alexandra.dk/?p=3836).

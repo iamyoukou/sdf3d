@@ -57,6 +57,8 @@ vec3 gridOrigin(0, 0, 0);
 vec3 rangeOffset(0.2f, 0.2f, 0.2f);
 Grid grid;
 
+unsigned int frameNumber = 0;
+
 int main(int argc, char **argv) {
   initGL();
   initShader();
@@ -104,6 +106,24 @@ int main(int argc, char **argv) {
 
     glBindVertexArray(sphere.vao);
     glDrawArrays(GL_TRIANGLES, 0, sphere.faces.size() * 3);
+
+    /* save frames */
+    // string dir = "./result/output";
+    // // zero padding
+    // // e.g. "output0001.bmp"
+    // string num = to_string(frameNumber);
+    // num = string(4 - num.length(), '0') + num;
+    // string output = dir + num + ".bmp";
+    //
+    // FIBITMAP *outputImage =
+    //     FreeImage_AllocateT(FIT_UINT32, WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2);
+    // glReadPixels(0, 0, WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2, GL_BGRA,
+    //              GL_UNSIGNED_INT_8_8_8_8_REV,
+    //              (GLvoid *)FreeImage_GetBits(outputImage));
+    // FreeImage_Save(FIF_BMP, outputImage, output.c_str(), 0);
+    // std::cout << output << " saved." << '\n';
+    // frameNumber++;
+    /* end save frames */
 
     // refresh
     glfwSwapBuffers(window);
