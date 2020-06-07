@@ -10,7 +10,7 @@
 
 GLFWwindow *window;
 
-vec3 lightPosition = vec3(3.f, 3.f, 3.f);
+vec3 lightPos = vec3(3.f, 3.f, 3.f);
 vec3 lightColor = vec3(1.f, 1.f, 1.f);
 float lightPower = 1.f;
 
@@ -35,6 +35,8 @@ vec3 gridOrigin(0, 0, 0);
 vec3 rangeOffset(0.2f, 0.2f, 0.2f);
 Grid grid;
 
+Mesh mesh;
+
 /* opengl variables */
 GLuint exeShader;
 GLint uniM, uniV, uniP;
@@ -45,123 +47,35 @@ void computeMatricesFromInputs(mat4 &, mat4 &);
 void keyCallback(GLFWwindow *, int, int, int, int);
 
 void initGL();
+void initOther();
 void initMatrix();
 void initLight();
 void initShader();
 void initGrid();
+void initMesh();
 void releaseResource();
 
-void writePointCloud(vector<vec3> &, const string);
-void writeSdf(Grid &, const string);
 void readSdf(Grid &, const string);
 vec3 calCellPos(vec3);
-
-// random number in [0, 1]
-float randf() {
-  // srand(clock());
-
-  float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-  return f;
-}
+float randf();
 
 int main(int argc, char const *argv[]) {
   initGL();
+  initOther();
   initShader();
   initMatrix();
   initLight();
-
-  /* prepare mesh data */
-  Mesh mesh = loadObj("./mesh/sphere.obj");
-  // Mesh mesh = loadObj("./mesh/monkey.obj");
-  // Mesh mesh = loadObj("./mesh/torus.obj");
-  // Mesh mesh = loadObj("./mesh/bunny.obj");
-  // Mesh mesh = loadObj("./mesh/cube.obj");
-  initMesh(mesh);
-  findAABB(mesh);
-
-  // transform mesh to (origin + offset) position
-  vec3 offset = (gridOrigin - mesh.min) + rangeOffset;
-  mesh.translate(offset);
-  updateMesh(mesh);
-
-  /* grid parameters */
-  // The grid covers the area of mesh
-  // Between the grid and the mesh,
-  // there is a offset area which is defined by rangeOffset
-  vec3 gridSize = (mesh.max + rangeOffset) - gridOrigin;
-  nOfCells = ivec3(gridSize / cellSize);
-
+  initMesh();
   initGrid();
 
-  /* find a searching range */
-  // select an area a little bigger than mesh's aabb
-  vec3 rangeMin = mesh.min - rangeOffset;
-  vec3 rangeMax = mesh.max + rangeOffset;
-
-  // std::cout << to_string(rangeMin) << '\n';
-  // std::cout << to_string(rangeMax) << '\n';
-
-  // find cells which cover those area
-  vec3 startCell = calCellPos(rangeMin);
-  vec3 endCell = calCellPos(rangeMax);
-
-  // for the selected range
-  // for (float z = startCell.z; z < endCell.z; z += cellSize) {
-  //   for (float y = startCell.y; y < endCell.y; y += cellSize) {
-  //     for (float x = startCell.x; x < endCell.x; x += cellSize) {
-  //       vec3 P(x, y, z); // cell position
-  //       float dist = 9999.f;
-  //
-  //       // iterate triangles in the mesh
-  //       for (size_t i = 0; i < mesh.faces.size(); i++) {
-  //         Face face = mesh.faces[i];
-  //
-  //         glm::vec3 A, B, C, N;
-  //         A = mesh.vertices[face.v1];
-  //         B = mesh.vertices[face.v2];
-  //         C = mesh.vertices[face.v3];
-  //         N = mesh.faceNormals[face.vn1];
-  //
-  //         float temp = distPoint2Triangle(A, B, C, N, P);
-  //         float oldDist = dist;
-  //
-  //         // for general case
-  //         dist = (glm::abs(temp) < glm::abs(dist)) ? temp : dist;
-  //
-  //         // for a special case
-  //         float delta = abs(abs(temp) - abs(oldDist));
-  //         // if delta is less than some threshold
-  //         // we decide that temp is equal to dist
-  //         if (delta < 0.0001f) {
-  //
-  //           // if dist will change its sign
-  //           // we keep dist at the positive one
-  //           dist = (temp > 0) ? temp : oldDist;
-  //         }
-  //       } // end iterate triangles
-  //
-  //       // write dist into grid
-  //       int hash = calCellHash(P, nOfCells, cellSize);
-  //       grid.cells[hash].sd = dist;
-  //     } // end x direction
-  //   }   // end y direction
-  // }     // end z direction
-
-  // writeSdf(grid, "sdf.txt");
-
-  // test
+  // test points
   std::vector<Point> pts;
   for (size_t i = 0; i < 60; i++) {
     Point p;
     p.pos = vec3(randf(), randf(), randf()) * 3.f;
     pts.push_back(p);
   }
-  // Point p;
-  // p.pos = vec3(0, 1.5, 0);
-  // p.v = vec3(randf(), randf(), randf());
-  // pts.push_back(p);
-  //
+
   /* glfw loop */
   // a rough way to solve cursor position initialization problem
   // must call glfwPollEvents once to activate glfwSetCursorPos
@@ -169,10 +83,10 @@ int main(int argc, char const *argv[]) {
   glfwPollEvents();
   glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 
-  for (size_t i = 0; i < pts.size(); i++) {
-    std::cout << "point: " << to_string(pts[i].pos)
-              << ", dist = " << grid.getDistance(pts[i].pos) << '\n';
-  }
+  // for (size_t i = 0; i < pts.size(); i++) {
+  //   std::cout << "point: " << to_string(pts[i].pos)
+  //             << ", dist = " << grid.getDistance(pts[i].pos) << '\n';
+  // }
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window)) {
@@ -290,8 +204,8 @@ void initLight() { // light
   uniLightColor = myGetUniformLocation(exeShader, "lightColor");
   glUniform3fv(uniLightColor, 1, value_ptr(lightColor));
 
-  uniLightPosition = myGetUniformLocation(exeShader, "lightPosition");
-  glUniform3fv(uniLightPosition, 1, value_ptr(lightPosition));
+  uniLightPosition = myGetUniformLocation(exeShader, "lightPos");
+  glUniform3fv(uniLightPosition, 1, value_ptr(lightPos));
 
   // uniLightPower = myGetUniformLocation(exeShader, "lightPower");
   // glUniform1f(uniLightPower, lightPower);
@@ -303,7 +217,10 @@ void initShader() {
   glUseProgram(exeShader);
 }
 
-void releaseResource() { glfwTerminate(); }
+void releaseResource() {
+  glfwTerminate();
+  FreeImage_DeInitialise();
+}
 
 void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
   // glfwGetTime is called only once, the first time this function is called
@@ -316,8 +233,6 @@ void computeMatricesFromInputs(mat4 &newProject, mat4 &newView) {
   // Get mouse position
   double xpos, ypos;
   glfwGetCursorPos(window, &xpos, &ypos);
-
-  // std::cout << xpos << ", " << ypos << '\n';
 
   // Reset mouse position for next frame
   glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
@@ -387,55 +302,18 @@ vec3 calCellPos(vec3 pt) {
 }
 
 void initGrid() {
+  /* grid parameters */
+  // The grid covers the area of mesh
+  // Between the grid and the mesh,
+  // there is a offset area which is defined by rangeOffset
+  vec3 gridSize = (mesh.max + rangeOffset) - gridOrigin;
+  nOfCells = ivec3(gridSize / cellSize);
+
   grid.origin = gridOrigin;
   grid.cellSize = cellSize;
   grid.nOfCells = nOfCells;
 
-  // ATTENTION: the order of iterating x, y, z relates to
-  // the hash of cell index
-  // for (size_t iz = 0; iz < nOfCells.z; iz++) {
-  //   for (size_t iy = 0; iy < nOfCells.y; iy++) {
-  //     for (size_t ix = 0; ix < nOfCells.x; ix++) {
-  //       Cell cell;
-  //
-  //       cell.idx = ivec3(ix, iy, iz);
-  //       cell.sd = 9999.f;
-  //
-  //       cell.pos = vec3(ix, iy, iz) * cellSize + gridOrigin;
-  //
-  //       grid.cells.push_back(cell);
-  //     } // end of iterate x
-  //   }   // end of iterate y
-  // }     // end of iterate z
-
-  // readSdf(grid, "sdfCube.txt");
   readSdf(grid, "sdfSphere.txt");
-}
-
-// format: x, y, z, i, j, k, dist
-void writeSdf(Grid &gd, const string fileName) {
-  ofstream output(fileName);
-
-  for (size_t i = 0; i < gd.cells.size(); i++) {
-    Cell &cell = gd.cells[i];
-
-    output << cell.pos.x;
-    output << " ";
-    output << cell.pos.y;
-    output << " ";
-    output << cell.pos.z;
-    output << " ";
-    output << cell.idx.x;
-    output << " ";
-    output << cell.idx.y;
-    output << " ";
-    output << cell.idx.z;
-    output << " ";
-    output << cell.sd;
-    output << '\n';
-  }
-
-  output.close();
 }
 
 // format: x, y, z, i, j, k, dist
@@ -464,7 +342,57 @@ void readSdf(Grid &gd, const string fileName) {
     gd.cells.push_back(cell);
   } // end read file
 
-  // std::cout << "cells.size()" << gd.cells.size() << '\n';
-
   fin.close();
+}
+
+void initOther() {
+  srand(clock());             // random seed
+  FreeImage_Initialise(true); // FreeImage library
+}
+
+float randf() {
+  // random number in [0, 1]
+  float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+  return f;
+}
+
+void initMesh() {
+  /* prepare mesh data */
+  mesh = loadObj("./mesh/sphere.obj");
+  createMesh(mesh);
+  findAABB(mesh);
+
+  // transform mesh to (origin + offset) position
+  vec3 offset = (gridOrigin - mesh.min) + rangeOffset;
+  mesh.translate(offset);
+  updateMesh(mesh);
+}
+
+void keyCallback(GLFWwindow *keyWnd, int key, int scancode, int action,
+                 int mods) {
+  if (action == GLFW_PRESS) {
+    switch (key) {
+    case GLFW_KEY_ESCAPE: {
+      glfwSetWindowShouldClose(keyWnd, GLFW_TRUE);
+      break;
+    }
+    case GLFW_KEY_F: {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      break;
+    }
+    case GLFW_KEY_L: {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      break;
+    }
+    case GLFW_KEY_I: {
+      std::cout << "eyePoint: " << to_string(eyePoint) << '\n';
+      std::cout << "verticleAngle: " << fmod(verticalAngle, 6.28f) << ", "
+                << "horizontalAngle: " << fmod(horizontalAngle, 6.28f) << endl;
+      break;
+    }
+    default:
+      break;
+    }
+  }
 }

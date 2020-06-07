@@ -16,10 +16,10 @@ LIBS=-L/usr/local/Cellar/glew/2.1.0_1/lib -lglfw \
 
 SRC_DIR=/Users/YJ-work/cpp/myGL_glfw/sdf3d/src
 
-all: test solidVoxelizer simulation
+all: createSdf solidVoxelizer simulation sdfVisualizer
 
-test: test.o common.o sdf.o
-	$(CXX) -g $(LIBS) $^ -o test
+createSdf: createSdf.o common.o sdf.o
+	$(CXX) -g $(LIBS) $^ -o createSdf
 	rm -f *.o
 
 solidVoxelizer: solidVoxelizer.o common.o sdf.o
@@ -30,8 +30,13 @@ simulation: simulation.o common.o sdf.o
 	$(CXX) -g $(LIBS) $^ -o $@
 	rm -f *.o
 
-test.o: $(SRC_DIR)/test.cpp
-	$(CXX) -c $(INCS) $^ -o test.o
+sdfVisualizer: sdfVisualizer.o common.o sdf.o
+	$(CXX) -g $(LIBS) $^ -o $@
+	rm -f *.o
+
+
+createSdf.o: $(SRC_DIR)/createSdf.cpp
+	$(CXX) -c $(INCS) $^ -o createSdf.o
 
 common.o: $(SRC_DIR)/common.cpp
 	$(CXX) -c $(INCS) $^ -o common.o
@@ -45,11 +50,13 @@ solidVoxelizer.o: $(SRC_DIR)/solidVoxelizer.cpp
 simulation.o: $(SRC_DIR)/simulation.cpp
 	$(CXX) -c $(INCS) $^ -o $@
 
+sdfVisualizer.o: $(SRC_DIR)/sdfVisualizer.cpp
+	$(CXX) -c $(INCS) $^ -o $@
 
 .PHONY: clean video
 
 clean:
-	rm -vf test ./result/*
+	rm -v ./result/*
 
 video:
-	ffmpeg -r 60 -start_number 0 -i ./result/sim%03d.png -vcodec mpeg4 -b:v 30M -s 100x100 ./video/result.mp4
+	ffmpeg -r 30 -start_number 0 -i ./result/output%04d.bmp -vcodec mpeg4 -b:v 30M -s 400x300 ./result.mp4

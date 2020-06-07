@@ -1,6 +1,4 @@
 #include "common.h"
-#include <ctime>
-#include <cstdlib>
 #include <sdf.h>
 
 #include <fstream>
