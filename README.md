@@ -138,5 +138,13 @@ Although selectively choosing thresholds (or tolerance value in [Fuhrmann, 2003]
 Currently, this method is sufficient for me.
 But I will keep an eye on finding an alternative one.
 
+# Note
+
+When calculating SDF for a mesh, we use surface normals, not vertex normals.
+So be careful when you export your mesh data from your 3D modeling software (e.g. Blender).
+Especially, if you use a smooth shader, you should prepare two same meshes.
+One with surface normals for calculating SDF,
+the other one with vertex normals for smooth shading.
+
 # Reference
 [Fuhrmann,2003] Fuhrmann, Arnulph, Gerrit Sobotka, and Clemens Groß. "Distance fields for rapid collision detection in physically based modeling." Proceedings of GraphiCon 2003. 2003.

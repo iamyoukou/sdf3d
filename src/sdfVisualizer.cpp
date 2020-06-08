@@ -174,7 +174,7 @@ void initGL() { // Initialise GLFW
 
   glPointSize(10);
   glLineWidth(2.0f);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void initMatrix() {
@@ -313,7 +313,7 @@ void initGrid() {
   grid.cellSize = cellSize;
   grid.nOfCells = nOfCells;
 
-  readSdf(grid, "sdfSphere.txt");
+  readSdf(grid, "sdfCube45d.txt");
 }
 
 // format: x, y, z, i, j, k, dist
@@ -359,7 +359,7 @@ float randf() {
 
 void initMesh() {
   /* prepare mesh data */
-  mesh = loadObj("./mesh/sphere.obj");
+  mesh = loadObj("./mesh/cube45d.obj");
   createMesh(mesh);
   findAABB(mesh);
 

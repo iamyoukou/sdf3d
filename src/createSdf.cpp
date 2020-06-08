@@ -158,11 +158,7 @@ void writeSdf(Grid &gd, const string fileName) {
 
 void initMesh() {
   /* prepare mesh data */
-  mesh = loadObj("./mesh/sphere.obj");
-  // Mesh mesh = loadObj("./mesh/monkey.obj");
-  // Mesh mesh = loadObj("./mesh/torus.obj");
-  // Mesh mesh = loadObj("./mesh/bunny.obj");
-  // Mesh mesh = loadObj("./mesh/cube.obj");
+  mesh = loadObj("./mesh/cube.obj");
   findAABB(mesh);
 
   // transform mesh to (origin + offset) position

@@ -10,7 +10,7 @@ GLint uniEyePoint;
 GLFWwindow *window;
 GLuint shaderPar, shaderSphere;
 Particles particles;
-Mesh sphere;
+Mesh mesh;
 
 void initGL();
 void initShader();
@@ -102,8 +102,8 @@ int main(int argc, char **argv) {
 
     glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
-    glBindVertexArray(sphere.vao);
-    glDrawArrays(GL_TRIANGLES, 0, sphere.faces.size() * 3);
+    glBindVertexArray(mesh.vao);
+    glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
 
     /* save frames */
     // string dir = "./result/output";
@@ -111,14 +111,14 @@ int main(int argc, char **argv) {
     // // e.g. "output0001.bmp"
     // string num = to_string(frameNumber);
     // num = string(4 - num.length(), '0') + num;
-    // string output = dir + num + ".bmp";
+    // string output = dir + num + ".png";
     //
     // FIBITMAP *outputImage =
     //     FreeImage_AllocateT(FIT_UINT32, WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2);
     // glReadPixels(0, 0, WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2, GL_BGRA,
     //              GL_UNSIGNED_INT_8_8_8_8_REV,
     //              (GLvoid *)FreeImage_GetBits(outputImage));
-    // FreeImage_Save(FIF_BMP, outputImage, output.c_str(), 0);
+    // FreeImage_Save(FIF_PNG, outputImage, output.c_str(), 0);
     // std::cout << output << " saved." << '\n';
     // frameNumber++;
     /* end save frames */
@@ -247,15 +247,15 @@ void initParticles() {
 }
 
 void initMesh() {
-  sphere = loadObj("./mesh/sphereSmooth.obj");
-  createMesh(sphere);
+  mesh = loadObj("./mesh/cubeForShading.obj");
+  createMesh(mesh);
 
-  findAABB(sphere);
+  findAABB(mesh);
 
   // transform mesh to (origin + offset) position
-  vec3 offset = (gridOrigin - sphere.min) + rangeOffset;
-  sphere.translate(offset);
-  updateMesh(sphere);
+  vec3 offset = (gridOrigin - mesh.min) + rangeOffset;
+  mesh.translate(offset);
+  updateMesh(mesh);
 }
 
 void releaseResource() { glfwTerminate(); }
@@ -492,12 +492,12 @@ float randf() {
 }
 
 void initGrid() {
-  vec3 gridSize = (sphere.max + rangeOffset) - gridOrigin;
+  vec3 gridSize = (mesh.max + rangeOffset) - gridOrigin;
   nOfCells = ivec3(gridSize / cellSize);
 
   grid.origin = gridOrigin;
   grid.cellSize = cellSize;
   grid.nOfCells = nOfCells;
 
-  readSdf(grid, "sdfSphere.txt");
+  readSdf(grid, "sdfCube.txt");
 }
