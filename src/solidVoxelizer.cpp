@@ -10,7 +10,7 @@
 
 GLFWwindow *window;
 
-vec3 lightPosition = vec3(3.f, 3.f, 3.f);
+vec3 lightPos = vec3(3.f, 3.f, 3.f);
 vec3 lightColor = vec3(1.f, 1.f, 1.f);
 float lightPower = 1.f;
 
@@ -61,12 +61,8 @@ int main(int argc, char const *argv[]) {
   std::vector<glm::vec3> pointCloud;
 
   /* prepare mesh data */
-  Mesh mesh = loadObj("./mesh/cube45d.obj");
-  // Mesh mesh = loadObj("./mesh/monkey.obj");
-  // Mesh mesh = loadObj("./mesh/torus.obj");
-  // Mesh mesh = loadObj("./mesh/bunny.obj");
-  // Mesh mesh = loadObj("./mesh/cube.obj");
-  initMesh(mesh);
+  Mesh mesh = loadObj("./mesh/sphere.obj");
+  createMesh(mesh);
   findAABB(mesh);
 
   // transform mesh to (origin + offset) position
@@ -80,8 +76,6 @@ int main(int argc, char const *argv[]) {
   // there is a offset area which is defined by rangeOffset
   vec3 gridSize = (mesh.max + rangeOffset * 2.0f) - gridOrigin;
   nOfCells = ivec3(gridSize / cellSize);
-
-  // std::cout << "nOfCells = " << to_string(nOfCells) << '\n';
 
   /* find a searching range */
   // select an area a little bigger than mesh's aabb
@@ -182,7 +176,6 @@ int main(int argc, char const *argv[]) {
           // if delta is less than some threshold
           // we decide that temp is equal to dist
           if (delta < 0.0001f) {
-            // std::cout << "delta = " << delta << '\n';
 
             // if dist will change its sign
             // we keep dist at the positive one
@@ -196,9 +189,6 @@ int main(int argc, char const *argv[]) {
         float threshold = 0.f;
         if (dist < threshold) {
           pointCloud.push_back(P);
-
-          // test
-          // std::cout << "Point " << to_string(P) << ": " << dist << '\n';
         }
       } // end x direction
     }   // end y direction
@@ -340,8 +330,8 @@ void initLight() { // light
   uniLightColor = myGetUniformLocation(exeShader, "lightColor");
   glUniform3fv(uniLightColor, 1, value_ptr(lightColor));
 
-  uniLightPosition = myGetUniformLocation(exeShader, "lightPosition");
-  glUniform3fv(uniLightPosition, 1, value_ptr(lightPosition));
+  uniLightPosition = myGetUniformLocation(exeShader, "lightPos");
+  glUniform3fv(uniLightPosition, 1, value_ptr(lightPos));
 
   // uniLightPower = myGetUniformLocation(exeShader, "lightPower");
   // glUniform1f(uniLightPower, lightPower);
@@ -434,4 +424,32 @@ vec3 calCellPos(vec3 pt) {
   vec3 pos = posRef + gridOrigin;
 
   return pos;
+}
+
+void keyCallback(GLFWwindow *keyWnd, int key, int scancode, int action,
+                 int mods) {
+  if (action == GLFW_PRESS) {
+    switch (key) {
+    case GLFW_KEY_ESCAPE: {
+      glfwSetWindowShouldClose(keyWnd, GLFW_TRUE);
+      break;
+    }
+    case GLFW_KEY_F: {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      break;
+    }
+    case GLFW_KEY_L: {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      break;
+    }
+    case GLFW_KEY_I: {
+      std::cout << "eyePoint: " << to_string(eyePoint) << '\n';
+      std::cout << "verticleAngle: " << fmod(verticalAngle, 6.28f) << ", "
+                << "horizontalAngle: " << fmod(horizontalAngle, 6.28f) << endl;
+      break;
+    }
+    default:
+      break;
+    }
+  }
 }

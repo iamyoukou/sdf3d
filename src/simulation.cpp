@@ -13,6 +13,7 @@ Particles particles;
 Mesh mesh;
 
 void initGL();
+void initOther();
 void initShader();
 void initParticles();
 void initMesh();
@@ -42,7 +43,7 @@ vec3 lightColor = vec3(1.f, 1.f, 1.f);
 float lightPower = 1.f;
 
 mat4 commonM, commonV, commonP;
-vec3 eyePoint = vec3(-5.008293, 5, 1.803902);
+vec3 eyePoint = vec3(-5.008293, 7, 1.803902);
 vec3 eyeDir =
     vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
          sin(verticalAngle) * sin(horizontalAngle));
@@ -59,6 +60,7 @@ unsigned int frameNumber = 0;
 
 int main(int argc, char **argv) {
   initGL();
+  initOther();
   initShader();
   initMatrix();
   initUniform();
@@ -111,14 +113,16 @@ int main(int argc, char **argv) {
     // // e.g. "output0001.bmp"
     // string num = to_string(frameNumber);
     // num = string(4 - num.length(), '0') + num;
-    // string output = dir + num + ".png";
+    // string output = dir + num + ".bmp";
     //
+    // // must use WINDOW_WIDTH * 2 and WINDOW_HEIGHT * 2 on OSX
+    // // maybe because of the retina display
     // FIBITMAP *outputImage =
     //     FreeImage_AllocateT(FIT_UINT32, WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2);
     // glReadPixels(0, 0, WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2, GL_BGRA,
     //              GL_UNSIGNED_INT_8_8_8_8_REV,
     //              (GLvoid *)FreeImage_GetBits(outputImage));
-    // FreeImage_Save(FIF_PNG, outputImage, output.c_str(), 0);
+    // FreeImage_Save(FIF_BMP, outputImage, output.c_str(), 0);
     // std::cout << output << " saved." << '\n';
     // frameNumber++;
     /* end save frames */
@@ -181,7 +185,7 @@ void initGL() { // Initialise GLFW
   glEnable(GL_DEPTH_TEST); // must enable depth test!!
 
   glEnable(GL_PROGRAM_POINT_SIZE);
-  glPointSize(10);
+  glPointSize(12);
 }
 
 void initShader() {
@@ -201,7 +205,7 @@ void initMatrix() {
 }
 
 void initParticles() {
-  loadPoints(particles, "test.txt");
+  loadPoints(particles, "particles.txt");
 
   // create buffer
   int nOfPs = particles.Ps.size();
@@ -271,9 +275,6 @@ void step() {
     // collision detection
     float dist = grid.getDistance(p.pos);
 
-    // if (i == 0)
-    //   std::cout << "dist = " << dist << '\n';
-
     if (dist < 0.1) {
       vec3 n = grid.getGradient(p.pos);
 
@@ -283,51 +284,49 @@ void step() {
       p.v = vVer + vHor;
     }
 
+    // update position
     p.pos += dt * p.v;
+
+    // if a particle has moved into an object
+    // push it out
+    float newDist = grid.getDistance(p.pos);
+    if (newDist < 0.f) {
+      newDist *= 2.f; // for visualization convenience
+      vec3 newGrad = grid.getGradient(p.pos);
+      p.pos += newDist * newGrad;
+    }
+
   } // end iterating particles
 }
 
 void loadPoints(Particles &pars, const string fileName) {
   // read point information from file
-  // ifstream ifs(fileName);
-  //
-  // while (ifs.peek() != EOF) {
-  //   float x, y, z;
-  //
-  //   ifs >> x;
-  //   ifs >> y;
-  //   ifs >> z;
-  //
-  //   // ignore '\n'
-  //   // otherwise, the last empty line will be read
-  //   ifs.ignore(1);
-  //
-  //   Point p;
-  //   p.pos = (vec3(x, y, z));
-  //   // p.color = vec3(randf(), randf(), randf());
-  //   p.color = vec3(0.5, 0.5, 0.5);
-  //   p.v = vec3(0, 0, 0);
-  //   p.m = randf();
-  //
-  //   // transform
-  //   p.pos += vec3(0, 3.f, 0);
-  //
-  //   pars.Ps.push_back(p);
-  // }
-  //
-  // ifs.close();
+  ifstream ifs(fileName);
 
-  srand(clock());
+  while (ifs.peek() != EOF) {
+    float x, y, z;
 
-  for (size_t i = 0; i < 10; i++) {
+    ifs >> x;
+    ifs >> y;
+    ifs >> z;
+
+    // ignore '\n'
+    // otherwise, the last empty line will be read
+    ifs.ignore(1);
+
     Point p;
-    p.pos = vec3(randf() * 2.f, 3.5, randf() * 2.f);
-    p.v = vec3(0, 0, 0);
+    p.pos = vec3(x, y, z);
     p.color = vec3(0.5, 0.5, 0.5);
+    p.v = vec3(randf() - 0.5f, randf() - 0.5f, randf() - 0.5f);
     p.m = randf();
+
+    // transform
+    p.pos += vec3(0, 4.f, 0);
 
     pars.Ps.push_back(p);
   }
+
+  ifs.close();
 }
 
 void computeMatricesFromInputs() {
@@ -488,7 +487,7 @@ float randf() {
   // [0, 1]
   float f = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-  return f + 0.25;
+  return f;
 }
 
 void initGrid() {
@@ -501,3 +500,5 @@ void initGrid() {
 
   readSdf(grid, "sdfCube.txt");
 }
+
+void initOther() { srand(clock()); }
