@@ -629,26 +629,9 @@ void drawTriangle(Triangle &tri) {
 }
 
 void drawPoints(Particles &ps) {
-  // array data
   int nOfPs = ps.Ps.size();
-  GLfloat *aPos = new GLfloat[nOfPs * 3];
-  // GLfloat *aColor = new GLfloat[nOfPs * 3];
 
-  // implant data
-  for (size_t i = 0; i < nOfPs; i++) {
-    // positions
-    Point &p = ps.Ps[i];
-    aPos[i * 3 + 0] = p.pos.x;
-    aPos[i * 3 + 1] = p.pos.y;
-    aPos[i * 3 + 2] = p.pos.z;
-
-    // colors
-    // aColor[i * 3 + 0] = p.color.r;
-    // aColor[i * 3 + 1] = p.color.g;
-    // aColor[i * 3 + 2] = p.color.b;
-  }
-
-  // selete vao
+  // select vao
   glBindVertexArray(ps.vao);
 
   // position
@@ -657,8 +640,16 @@ void drawPoints(Particles &ps) {
   glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), NULL,
                GL_STREAM_DRAW);
   for (size_t i = 0; i < nOfPs; i++) {
+    Point &p = ps.Ps[i];
+
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * i,
-                    sizeof(GLfloat) * 3, &aPos[i * 3]);
+                    sizeof(GLfloat) * 3, &p.pos);
+
+    // if vec3 does not save data continuously in memory
+    // use the following code
+    // GLfloat temp[] = {p.pos.x, p.pos.y, p.pos.z};
+    // glBufferSubData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * i,
+    //                 sizeof(GLfloat) * 3, &temp);
   }
 
   // color
@@ -672,8 +663,4 @@ void drawPoints(Particles &ps) {
   // }
 
   glDrawArrays(GL_POINTS, 0, nOfPs);
-
-  // release
-  delete[] aPos;
-  // delete[] aColor;
 }
