@@ -1,5 +1,5 @@
-#include <common.h>
-#include <sdf.h>
+#include "common.h"
+#include "sdf.h"
 
 GLFWwindow *window;
 
@@ -158,7 +158,7 @@ void writeSdf(Grid &gd, const string fileName) {
 
 void initMesh() {
   /* prepare mesh data */
-  mesh = loadObj("./mesh/cube.obj");
+  mesh = loadObj("./mesh/bunny.obj");
   findAABB(mesh);
 
   // transform mesh to (origin + offset) position

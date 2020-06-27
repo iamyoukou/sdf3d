@@ -1,12 +1,5 @@
-#include <common.h>
-#include <sdf.h>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-
-#include <fstream>
-#include <cmath>
+#include "common.h"
+#include "sdf.h"
 
 GLFWwindow *window;
 
@@ -15,14 +8,14 @@ vec3 lightColor = vec3(1.f, 1.f, 1.f);
 float lightPower = 1.f;
 
 /* for view control */
-float verticalAngle = -2.76603;
-float horizontalAngle = 1.56834;
+float verticalAngle = -1.99451;
+float horizontalAngle = 1.52563;
 float initialFoV = 45.0f;
 float speed = 1.0f;
 float mouseSpeed = 0.005f;
 
 mat4 model, view, projection;
-vec3 eyePoint = vec3(0.106493, 3.517007, 1.688342);
+vec3 eyePoint = vec3(-0.309694, 2.116768, 4.855271);
 vec3 eyeDirection =
     vec3(sin(verticalAngle) * cos(horizontalAngle), cos(verticalAngle),
          sin(verticalAngle) * sin(horizontalAngle));
@@ -38,10 +31,13 @@ Grid grid;
 Mesh mesh;
 
 /* opengl variables */
-GLuint exeShader;
-GLint uniM, uniV, uniP;
+GLuint shaderMesh, shaderPoint, shaderLine;
+GLint uniMeshM, uniMeshV, uniMeshP;
 GLint uniLightColor, uniLightPosition, uniLightPower;
 GLint uniEyePoint;
+
+GLint uniPointM, uniPointV, uniPointP;
+GLint uniLineM, uniLineV, uniLineP;
 
 void computeMatricesFromInputs(mat4 &, mat4 &);
 void keyCallback(GLFWwindow *, int, int, int, int);
@@ -56,6 +52,7 @@ void initMesh();
 void releaseResource();
 
 void readSdf(Grid &, const string);
+void readSdfBatty(Grid &, const string);
 vec3 calCellPos(vec3);
 float randf();
 
@@ -65,15 +62,26 @@ int main(int argc, char const *argv[]) {
   initShader();
   initMatrix();
   initLight();
-  initMesh();
+
   initGrid();
+  initMesh();
 
   // test points
   std::vector<Point> pts;
-  for (size_t i = 0; i < 60; i++) {
-    Point p;
-    p.pos = vec3(randf(), randf(), randf()) * 3.f;
-    pts.push_back(p);
+  // for (size_t i = 0; i < 60; i++) {
+  //   Point p;
+  //   p.pos = vec3(randf(), randf(), randf()) * 3.f;
+  //   p.color = vec3(0.5, 0.5, 0.5);
+  //   pts.push_back(p);
+  // }
+  for (size_t i = 0; i < grid.cells.size(); i++) {
+    Cell &cell = grid.cells[i];
+    if (cell.sd < 0) {
+      Point p;
+      p.pos = cell.pos;
+      p.color = vec3(0.5, 0.5, 0.5);
+      pts.push_back(p);
+    }
   }
 
   /* glfw loop */
@@ -91,29 +99,41 @@ int main(int argc, char const *argv[]) {
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window)) {
     // reset
-    glClearColor(0.f, 0.f, 0.4f, 0.f);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // view control
     computeMatricesFromInputs(projection, view);
-    glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
-    glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
-    glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
     // draw mesh
+    glUseProgram(shaderMesh);
+
+    glUniformMatrix4fv(uniMeshV, 1, GL_FALSE, value_ptr(view));
+    glUniformMatrix4fv(uniMeshP, 1, GL_FALSE, value_ptr(projection));
+    glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
+
     glBindVertexArray(mesh.vao);
     glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
 
+    // draw point
+    glUseProgram(shaderPoint);
+    glUniformMatrix4fv(uniPointV, 1, GL_FALSE, value_ptr(view));
+    glUniformMatrix4fv(uniPointP, 1, GL_FALSE, value_ptr(projection));
     drawPoints(pts);
+
+    // draw line
+    // glUseProgram(shaderLine);
+    // glUniformMatrix4fv(uniLineV, 1, GL_FALSE, value_ptr(view));
+    // glUniformMatrix4fv(uniLineP, 1, GL_FALSE, value_ptr(projection));
     //
-    for (size_t i = 0; i < pts.size(); i++) {
-      if (grid.getDistance(pts[i].pos) < 0.5f) {
-        vec3 start = pts[i].pos;
-        vec3 end = start + (grid.getGradient(pts[i].pos) *
-                            grid.getDistance(pts[i].pos));
-        drawLine(start, end);
-      }
-    }
+    // for (size_t i = 0; i < pts.size(); i++) {
+    //   if (grid.getDistance(pts[i].pos) < 0.5f) {
+    //     vec3 start = pts[i].pos;
+    //     vec3 end = start + (grid.getGradient(pts[i].pos) *
+    //                         grid.getDistance(pts[i].pos));
+    //     drawLine(start, end);
+    //   }
+    // }
 
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
@@ -178,43 +198,70 @@ void initGL() { // Initialise GLFW
 }
 
 void initMatrix() {
-  // transform matrix
-  uniM = myGetUniformLocation(exeShader, "M");
-  uniV = myGetUniformLocation(exeShader, "V");
-  uniP = myGetUniformLocation(exeShader, "P");
-
+  // common
   model = translate(mat4(1.f), vec3(0.f, 0.f, 0.f));
   view = lookAt(eyePoint,     // eye position
                 eyeDirection, // look at
                 up            // up
   );
-
   projection =
       perspective(initialFoV, 1.f * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.f);
 
-  glUniformMatrix4fv(uniM, 1, GL_FALSE, value_ptr(model));
-  glUniformMatrix4fv(uniV, 1, GL_FALSE, value_ptr(view));
-  glUniformMatrix4fv(uniP, 1, GL_FALSE, value_ptr(projection));
+  // mesh
+  glUseProgram(shaderMesh);
 
-  uniEyePoint = myGetUniformLocation(exeShader, "eyePoint");
+  uniMeshM = myGetUniformLocation(shaderMesh, "M");
+  uniMeshV = myGetUniformLocation(shaderMesh, "V");
+  uniMeshP = myGetUniformLocation(shaderMesh, "P");
+
+  glUniformMatrix4fv(uniMeshM, 1, GL_FALSE, value_ptr(model));
+  glUniformMatrix4fv(uniMeshV, 1, GL_FALSE, value_ptr(view));
+  glUniformMatrix4fv(uniMeshP, 1, GL_FALSE, value_ptr(projection));
+
+  uniEyePoint = myGetUniformLocation(shaderMesh, "eyePoint");
   glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
+
+  // point
+  glUseProgram(shaderPoint);
+
+  uniPointM = myGetUniformLocation(shaderMesh, "M");
+  uniPointV = myGetUniformLocation(shaderMesh, "V");
+  uniPointP = myGetUniformLocation(shaderMesh, "P");
+
+  glUniformMatrix4fv(uniPointM, 1, GL_FALSE, value_ptr(model));
+  glUniformMatrix4fv(uniPointV, 1, GL_FALSE, value_ptr(view));
+  glUniformMatrix4fv(uniPointP, 1, GL_FALSE, value_ptr(projection));
+
+  // line
+  glUseProgram(shaderLine);
+
+  uniLineM = myGetUniformLocation(shaderMesh, "M");
+  uniLineV = myGetUniformLocation(shaderMesh, "V");
+  uniLineP = myGetUniformLocation(shaderMesh, "P");
+
+  glUniformMatrix4fv(uniLineM, 1, GL_FALSE, value_ptr(model));
+  glUniformMatrix4fv(uniLineV, 1, GL_FALSE, value_ptr(view));
+  glUniformMatrix4fv(uniLineP, 1, GL_FALSE, value_ptr(projection));
 }
 
 void initLight() { // light
-  uniLightColor = myGetUniformLocation(exeShader, "lightColor");
+  // mesh
+  glUseProgram(shaderMesh);
+
+  uniLightColor = myGetUniformLocation(shaderMesh, "lightColor");
   glUniform3fv(uniLightColor, 1, value_ptr(lightColor));
 
-  uniLightPosition = myGetUniformLocation(exeShader, "lightPos");
+  uniLightPosition = myGetUniformLocation(shaderMesh, "lightPos");
   glUniform3fv(uniLightPosition, 1, value_ptr(lightPos));
 
-  // uniLightPower = myGetUniformLocation(exeShader, "lightPower");
+  // uniLightPower = myGetUniformLocation(shaderMesh, "lightPower");
   // glUniform1f(uniLightPower, lightPower);
 }
 
 void initShader() {
-  // build shader program
-  exeShader = buildShader("./shader/vsPhong.glsl", "./shader/fsPhong.glsl");
-  glUseProgram(exeShader);
+  shaderMesh = buildShader("./shader/vsPhong.glsl", "./shader/fsPhong.glsl");
+  shaderPoint = buildShader("./shader/vsPoint.glsl", "./shader/fsPoint.glsl");
+  shaderLine = buildShader("./shader/vsLine.glsl", "./shader/fsLine.glsl");
 }
 
 void releaseResource() {
@@ -306,14 +353,16 @@ void initGrid() {
   // The grid covers the area of mesh
   // Between the grid and the mesh,
   // there is a offset area which is defined by rangeOffset
-  vec3 gridSize = (mesh.max + rangeOffset) - gridOrigin;
-  nOfCells = ivec3(gridSize / cellSize);
+  // vec3 gridSize = (mesh.max + rangeOffset) - gridOrigin;
+  // nOfCells = ivec3(gridSize / cellSize);
+  //
+  // grid.origin = gridOrigin;
+  // grid.cellSize = cellSize;
+  // grid.nOfCells = nOfCells;
+  //
+  // readSdf(grid, "sdfBunnyMine.txt");
 
-  grid.origin = gridOrigin;
-  grid.cellSize = cellSize;
-  grid.nOfCells = nOfCells;
-
-  readSdf(grid, "sdfCube45d.txt");
+  readSdfBatty(grid, "sdfBunnyBatty.txt");
 }
 
 // format: x, y, z, i, j, k, dist
@@ -345,6 +394,57 @@ void readSdf(Grid &gd, const string fileName) {
   fin.close();
 }
 
+// SDF generated by SDFGen
+// from https://github.com/christopherbatty
+// note that the <padding> parameter translates the mesh
+// with (dx * padding)
+void readSdfBatty(Grid &gd, const string fileName) {
+  ifstream fin;
+  fin.open(fileName.c_str());
+
+  if (!(fin.good())) {
+    cout << "failed to open file : " << fileName << std::endl;
+  }
+
+  // # of cells
+  fin >> gd.nOfCells.x;
+  fin >> gd.nOfCells.y;
+  fin >> gd.nOfCells.z;
+
+  // origin
+  fin >> gd.origin.x;
+  fin >> gd.origin.y;
+  fin >> gd.origin.z;
+  // assume the origin is always (0, 0, 0)
+  gd.origin = vec3(0);
+
+  // cell size
+  fin >> gd.cellSize;
+
+  // read sdf
+  for (size_t k = 0; k < gd.nOfCells.z; k++) {
+    for (size_t j = 0; j < gd.nOfCells.y; j++) {
+      for (size_t i = 0; i < gd.nOfCells.x; i++) {
+        Cell cell;
+
+        cell.pos = vec3(i * gd.cellSize, j * gd.cellSize, k * gd.cellSize);
+        cell.pos += gd.origin;
+
+        // if padding is 1
+        // cell.pos += vec3(gd.cellSize * 1.f);
+
+        cell.idx = ivec3(i, j, k);
+
+        fin >> cell.sd;
+
+        gd.cells.push_back(cell);
+      }
+    }
+  }
+
+  fin.close();
+}
+
 void initOther() {
   srand(clock());             // random seed
   FreeImage_Initialise(true); // FreeImage library
@@ -359,13 +459,13 @@ float randf() {
 
 void initMesh() {
   /* prepare mesh data */
-  mesh = loadObj("./mesh/cube45d.obj");
+  mesh = loadObj("./mesh/bunny.obj");
   createMesh(mesh);
   findAABB(mesh);
 
   // transform mesh to (origin + offset) position
   vec3 offset = (gridOrigin - mesh.min) + rangeOffset;
-  mesh.translate(offset);
+  mesh.translate(offset + vec3(-grid.cellSize * 1.f));
   updateMesh(mesh);
 }
 

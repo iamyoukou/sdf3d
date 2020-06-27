@@ -258,11 +258,11 @@ float Grid::getDistance(int hash) { return cells[hash].sd; }
 
 // retrieve signed distance by point position
 float Grid::getDistance(vec3 p) {
+  // transform to the reference frame of the grid
+  p -= origin;
+
   // restriction
   ivec3 idx = floor(p / cellSize);
-
-  // std::cout << "hash = " << hash << '\n';
-  // std::cout << "cells.size() = " << cells.size() << '\n';
 
   // note that grid origin is set to world origin (0, 0, 0)
   if (idx.x < 0 || idx.x > nOfCells.x - 1) {
@@ -278,48 +278,50 @@ float Grid::getDistance(vec3 p) {
 }
 
 // retrieve gradient of a point p
-// vec3 Grid::getGradient(vec3 p) {
-//   vec3 grad;
-//
-//   // currently, grid origin is set to world origin (0, 0, 0)
-//   // if not, be careful to transform p to reference frame
-//   vec3 pref = p;
-//
-//   // calculate alpha (or the "normalized" position inside a cell)
-//   vec3 pCellPos = pref / cellSize;
-//   vec3 pCellPosFloor = glm::floor(pCellPos);
-//   vec3 alpha = pCellPos - pCellPosFloor;
-//
-//   // std::cout << "alpha = " << to_string(alpha) << '\n';
-//
-//   // interpolation along x (xy plane)
-//   float temp1 = getDistance(vec3(p.x + cellSize, p.y, p.z)) -
-//                 getDistance(vec3(p.x - cellSize, p.y, p.z));
-//   float temp2 = getDistance(vec3(p.x + cellSize, p.y + cellSize, p.z)) -
-//                 getDistance(vec3(p.x - cellSize, p.y + cellSize, p.z));
-//
-//   grad.x = lerp(temp1, temp2, alpha.y);
-//
-//   // interpolation along y (yz plane)
-//   float temp3 = getDistance(vec3(p.x, p.y + cellSize, p.z)) -
-//                 getDistance(vec3(p.x, p.y - cellSize, p.z));
-//   float temp4 = getDistance(vec3(p.x, p.y + cellSize, p.z + cellSize)) -
-//                 getDistance(vec3(p.x, p.y - cellSize, p.z + cellSize));
-//   grad.y = lerp(temp3, temp4, alpha.z);
-//
-//   // interpolation along z (zx plane)
-//   float temp5 = getDistance(vec3(p.x, p.y, p.z + cellSize)) -
-//                 getDistance(vec3(p.x, p.y, p.z - cellSize));
-//   float temp6 = getDistance(vec3(p.x + cellSize, p.y, p.z + cellSize)) -
-//                 getDistance(vec3(p.x + cellSize, p.y, p.z - cellSize));
-//   grad.z = lerp(temp5, temp6, alpha.x);
-//
-//   // be careful to check the direction of grad before using it
-//   // in some cases, "-grad" is appropriate
-//   return glm::normalize(-grad);
-// }
+vec3 Grid::getGradient2(vec3 p) {
+  vec3 grad;
+
+  // currently, grid origin is set to world origin (0, 0, 0)
+  // if not, be careful to transform p to reference frame
+  vec3 pref = p;
+
+  // calculate alpha (or the "normalized" position inside a cell)
+  vec3 pCellPos = pref / cellSize;
+  vec3 pCellPosFloor = glm::floor(pCellPos);
+  vec3 alpha = pCellPos - pCellPosFloor;
+
+  // std::cout << "alpha = " << to_string(alpha) << '\n';
+
+  // interpolation along x (xy plane)
+  float temp1 = getDistance(vec3(p.x + cellSize, p.y, p.z)) -
+                getDistance(vec3(p.x - cellSize, p.y, p.z));
+  float temp2 = getDistance(vec3(p.x + cellSize, p.y + cellSize, p.z)) -
+                getDistance(vec3(p.x - cellSize, p.y + cellSize, p.z));
+
+  grad.x = lerp(temp1, temp2, alpha.y);
+
+  // interpolation along y (yz plane)
+  float temp3 = getDistance(vec3(p.x, p.y + cellSize, p.z)) -
+                getDistance(vec3(p.x, p.y - cellSize, p.z));
+  float temp4 = getDistance(vec3(p.x, p.y + cellSize, p.z + cellSize)) -
+                getDistance(vec3(p.x, p.y - cellSize, p.z + cellSize));
+  grad.y = lerp(temp3, temp4, alpha.z);
+
+  // interpolation along z (zx plane)
+  float temp5 = getDistance(vec3(p.x, p.y, p.z + cellSize)) -
+                getDistance(vec3(p.x, p.y, p.z - cellSize));
+  float temp6 = getDistance(vec3(p.x + cellSize, p.y, p.z + cellSize)) -
+                getDistance(vec3(p.x + cellSize, p.y, p.z - cellSize));
+  grad.z = lerp(temp5, temp6, alpha.x);
+
+  // be careful to check the direction of grad before using it
+  // in some cases, "-grad" is appropriate
+  return glm::normalize(-grad);
+}
 
 vec3 Grid::getGradient(vec3 p) {
+  // transform to the reference frame of the grid
+  p -= origin;
 
   float gx = getDistance(vec3(p.x + cellSize, p.y, p.z)) -
              getDistance(vec3(p.x - cellSize, p.y, p.z));

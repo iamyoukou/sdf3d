@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <cmath>
 #include <vector>
 #include <GL/glew.h>
 #include <glm/glm.hpp>

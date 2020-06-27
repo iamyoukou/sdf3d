@@ -31,6 +31,7 @@ public:
   float getDistance(vec3);
   float getDistance(int);
   vec3 getGradient(vec3);
+  vec3 getGradient2(vec3);
   int calCellHash(vec3);
 
   /* Constructors */

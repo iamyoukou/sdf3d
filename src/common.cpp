@@ -530,8 +530,9 @@ void updateMesh(Mesh &mesh) {
 
 void drawPoints(std::vector<Point> &pts) { // array data
   int nOfPs = pts.size();
+
   GLfloat *aPos = new GLfloat[nOfPs * 3];
-  // GLfloat *aColor = new GLfloat[nOfPs * 3];
+  GLfloat *aColor = new GLfloat[nOfPs * 3];
 
   // implant data
   for (size_t i = 0; i < nOfPs; i++) {
@@ -542,9 +543,9 @@ void drawPoints(std::vector<Point> &pts) { // array data
     aPos[i * 3 + 2] = p.pos.z;
 
     // colors
-    // aColor[i * 3 + 0] = p.color.r;
-    // aColor[i * 3 + 1] = p.color.g;
-    // aColor[i * 3 + 2] = p.color.b;
+    aColor[i * 3 + 0] = p.color.r;
+    aColor[i * 3 + 1] = p.color.g;
+    aColor[i * 3 + 2] = p.color.b;
   }
 
   // selete vao
@@ -562,26 +563,29 @@ void drawPoints(std::vector<Point> &pts) { // array data
   glEnableVertexAttribArray(0);
 
   // color
-  // GLuint vboColor;
-  // glGenBuffers(1, &vboColor);
-  // glBindBuffer(GL_ARRAY_BUFFER, vboColor);
-  // glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), aColor,
-  //              GL_STREAM_DRAW);
-  // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-  // glEnableVertexAttribArray(1);
+  GLuint vboColor;
+  glGenBuffers(1, &vboColor);
+  glBindBuffer(GL_ARRAY_BUFFER, vboColor);
+  glBufferData(GL_ARRAY_BUFFER, nOfPs * 3 * sizeof(GLfloat), aColor,
+               GL_STREAM_DRAW);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(1);
 
   glDrawArrays(GL_POINTS, 0, nOfPs);
 
   // release
   delete[] aPos;
-  // delete[] aColor;
+  delete[] aColor;
   glDeleteBuffers(1, &vboPos);
-  // glDeleteBuffers(1, &vboColor);
+  glDeleteBuffers(1, &vboColor);
   glDeleteVertexArrays(1, &vao);
 }
 
 void drawLine(vec3 start, vec3 end) {
   GLfloat aPos[] = {start.x, start.y, start.z, end.x, end.y, end.z};
+
+  GLfloat aColor[] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                      0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
   // selete vao
   GLuint vao;
@@ -595,6 +599,14 @@ void drawLine(vec3 start, vec3 end) {
   glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(GLfloat), aPos, GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(0);
+
+  GLuint vboColor;
+  glGenBuffers(1, &vboColor);
+  glBindBuffer(GL_ARRAY_BUFFER, vboColor);
+  glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(GLfloat), aColor,
+               GL_STATIC_DRAW);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(1);
 
   glDrawArrays(GL_LINES, 0, 2);
 

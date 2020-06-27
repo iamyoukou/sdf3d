@@ -4,6 +4,9 @@
 In their paper, they state that the distance from a point to a triangle can be calculated using Voronoi regions, but they do not provide any details.
 After a lot of searching, I found [this article](http://twvideo01.ubm-us.net/o1/vault/gdc10/slides/Catto_Erin_PhysicsForProgrammers_ComputingDistance.pdf) written by [Erin Catto](https://github.com/erincatto) which explains exactly how to calculate that distance using Voronoi regions.
 
+Strongly recommend you to use [SDFGen](https://github.com/christopherbatty/SDFGen) from  [Christopher Batty](https://github.com/christopherbatty).
+It is much more efficient and accurate than mine.
+
 # Find the distance from a point to a triangle
 ![projection](./image/projection.png)
 
@@ -107,7 +110,9 @@ This correctly decides `P` as outside the mesh.
 ## SDF-based collision detection
 
 Add some simple simulation code to test the SDF-based collision detection.
-In most cases, it works fine.
+
+To increase accuracy, we can use smaller `cellSize` when creating SDF,
+and smaller threshold when doing collision detection.
 
 ![simpleCollision](./output.gif)
 
@@ -121,22 +126,6 @@ for the entire field:
 ```
 
 ![spherePointCloud](./image/voxelization.png)
-
-### Error
-The solid voxelization of the Stanford Bunny still shows errors.
-
-![error](./image/error.png)
-
-# Limitation
-Based on experiments and observations, using `dot(AP, N)` to decide whether a point is inside or outside a mesh shows limitations ([Fuhrmann, 2003] points out the similar thing).
-
-From my experience, if there are "sharp" parts in a mesh, some points around those sharp areas are decided to be inside the mesh.
-For example, the area around ears of the bunny.
-
-Although selectively choosing thresholds (or tolerance value in [Fuhrmann, 2003]) can somewhat reduce errors, its effect is limited.
-
-Currently, this method is sufficient for me.
-But I will keep an eye on finding an alternative one.
 
 # Note
 

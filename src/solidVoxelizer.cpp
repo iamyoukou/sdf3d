@@ -1,12 +1,5 @@
-#include <common.h>
-#include <sdf.h>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-
-#include <fstream>
-#include <cmath>
+#include "common.h"
+#include "sdf.h"
 
 GLFWwindow *window;
 
@@ -61,7 +54,7 @@ int main(int argc, char const *argv[]) {
   std::vector<glm::vec3> pointCloud;
 
   /* prepare mesh data */
-  Mesh mesh = loadObj("./mesh/sphere.obj");
+  Mesh mesh = loadObj("./mesh/bunny.obj");
   createMesh(mesh);
   findAABB(mesh);
 
@@ -216,9 +209,9 @@ int main(int argc, char const *argv[]) {
     glUniform3fv(uniEyePoint, 1, value_ptr(eyePoint));
 
     // draw mesh
-    glBindVertexArray(mesh.vao);
-    glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
-    // drawPoints(pts);
+    // glBindVertexArray(mesh.vao);
+    // glDrawArrays(GL_TRIANGLES, 0, mesh.faces.size() * 3);
+    drawPoints(pts);
     // drawLine(start, end);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
